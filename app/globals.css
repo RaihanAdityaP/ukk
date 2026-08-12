@@ -1,0 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'DM Sans', ui-sans-serif, system-ui;
+  background-color: #F7F3EC;
+}
+
+/* Garis titik-titik ala daftar harga katalog (dotted leader) */
+.leader-line {
+  flex: 1;
+  border-bottom: 1.5px dotted #C6BBA5;
+  margin: 0 8px;
+  transform: translateY(-4px);
+}
+
+/* Stamp lingkaran "Sejak 2016" */
+.brand-stamp {
+  border: 1.5px solid currentColor;
+  border-radius: 9999px;
+}
