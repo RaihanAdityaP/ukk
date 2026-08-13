@@ -9,7 +9,7 @@ export default function EditProductPage() {
   const params = useParams()
   const id = params.id as string
 
-  const [form, setForm] = useState({ name: '', price: '', stock: '', image_url: '', description: '' })
+  const [form, setForm] = useState({ name: '', price: '', stock: '', image_url: '', description: '', is_featured: false })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -25,6 +25,7 @@ export default function EditProductPage() {
           stock: String(data.stock),
           image_url: data.image_url ?? '',
           description: data.description ?? '',
+          is_featured: !!data.is_featured,
         })
       }
       setLoading(false)
@@ -46,6 +47,7 @@ export default function EditProductPage() {
         stock: Number(form.stock),
         image_url: form.image_url,
         description: form.description,
+        is_featured: form.is_featured,
       }),
     })
 
@@ -111,6 +113,16 @@ export default function EditProductPage() {
             rows={3}
           />
         </div>
+
+        <label className="flex items-center gap-2 text-sm text-ink/70 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={form.is_featured}
+            onChange={(e) => setForm({ ...form, is_featured: e.target.checked })}
+            className="w-4 h-4 accent-navy"
+          />
+          Jadikan &quot;Pilihan Minggu Ini&quot; (tampil besar di halaman utama)
+        </label>
 
         {error && <p className="text-brick text-sm">{error}</p>}
 

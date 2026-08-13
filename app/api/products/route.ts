@@ -35,15 +35,20 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { name, price, stock, category_id, image_url, description } = body
+  const { name, price, stock, category_id, image_url, description, is_featured } = body
 
   if (!name || price == null || stock == null) {
     return NextResponse.json({ error: 'Nama, harga, dan stok wajib diisi.' }, { status: 400 })
   }
 
+  // Kalau produk ini di-set featured, matiin featured di produk lain dulu (cuma boleh 1 featured aktif)
+  if (is_featured) {
+    await supabase.from('products').update({ is_featured: false }).eq('is_featured', true)
+  }
+
   const { data, error } = await supabase
     .from('products')
-    .insert({ name, price, stock, category_id, image_url, description })
+    .insert({ name, price, stock, category_id, image_url, description, is_featured: !!is_featured })
     .select()
     .single()
 

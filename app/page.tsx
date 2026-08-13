@@ -8,7 +8,10 @@ export default async function ShopPage() {
     .select('*, categories(name)')
     .order('created_at', { ascending: false })
 
-  const [hero, ...rest] = products ?? []
+  // Cari produk yang ditandai admin sebagai featured. Kalau belum ada yang di-set, fallback ke produk terbaru.
+  const featured = products?.find((p) => p.is_featured)
+  const hero = featured ?? products?.[0]
+  const rest = products?.filter((p) => p.id !== hero?.id) ?? []
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-10">
@@ -19,10 +22,12 @@ export default async function ShopPage() {
 
       {hero && (
         <div className="grid md:grid-cols-2 gap-0 border-2 border-ink mb-10">
-          <div className="aspect-[4/3] md:aspect-auto bg-stone/40 overflow-hidden">
-            {hero.image_url && (
+          <div className="aspect-[4/3] md:aspect-auto bg-stone/40 overflow-hidden flex items-center justify-center">
+            {hero.image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={hero.image_url} alt={hero.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="font-serif text-6xl text-navy/20">{hero.name.charAt(0)}</span>
             )}
           </div>
           <div className="p-8 flex flex-col justify-center bg-white">
@@ -45,10 +50,12 @@ export default async function ShopPage() {
       <div className="divide-y-2 divide-stone">
         {rest.map((p) => (
           <div key={p.id} className="flex items-center gap-5 py-5">
-            <div className="w-20 h-20 flex-shrink-0 bg-stone/40 overflow-hidden">
-              {p.image_url && (
+            <div className="w-20 h-20 flex-shrink-0 bg-stone/40 overflow-hidden flex items-center justify-center">
+              {p.image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={p.image_url} alt={p.name} className="w-full h-full object-cover" />
+              ) : (
+                <span className="font-serif text-2xl text-navy/20">{p.name.charAt(0)}</span>
               )}
             </div>
 

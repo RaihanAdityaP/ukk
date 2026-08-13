@@ -31,11 +31,15 @@ export async function PUT(
   }
 
   const body = await request.json()
-  const { name, price, stock, category_id, image_url, description } = body
+  const { name, price, stock, category_id, image_url, description, is_featured } = body
+
+  if (is_featured) {
+    await supabase.from('products').update({ is_featured: false }).eq('is_featured', true).neq('id', id)
+  }
 
   const { data, error } = await supabase
     .from('products')
-    .update({ name, price, stock, category_id, image_url, description, updated_at: new Date().toISOString() })
+    .update({ name, price, stock, category_id, image_url, description, is_featured: !!is_featured, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
     .single()

@@ -55,10 +55,12 @@ export default function CartPage() {
           <div className="divide-y-2 divide-stone mb-8">
             {items.map((item) => (
               <div key={item.id} className="flex items-center gap-4 py-4">
-                <div className="w-16 h-16 flex-shrink-0 bg-stone/40 overflow-hidden">
-                  {item.product?.image_url && (
+                <div className="w-16 h-16 flex-shrink-0 bg-stone/40 overflow-hidden flex items-center justify-center">
+                  {item.product?.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={item.product.image_url} alt={item.product?.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="font-serif text-lg text-navy/20">{item.product?.name?.charAt(0)}</span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">

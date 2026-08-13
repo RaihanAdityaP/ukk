@@ -13,6 +13,7 @@ export type Product = {
   category_id: string | null
   image_url: string | null
   description: string | null
+  is_featured: boolean
   created_at: string
   updated_at: string
 }
