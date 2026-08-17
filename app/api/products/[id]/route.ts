@@ -33,6 +33,13 @@ export async function PUT(
   const body = await request.json()
   const { name, price, stock, category_id, image_url, description, is_featured } = body
 
+  if (!name?.trim() || price == null || stock == null) {
+    return NextResponse.json({ error: 'Nama, harga, dan stok wajib diisi.' }, { status: 400 })
+  }
+  if (price < 0 || stock < 0) {
+    return NextResponse.json({ error: 'Harga dan stok tidak boleh negatif.' }, { status: 400 })
+  }
+
   if (is_featured) {
     await supabase.from('products').update({ is_featured: false }).eq('is_featured', true).neq('id', id)
   }

@@ -8,9 +8,10 @@ export default async function ShopPage() {
     .select('*, categories(name)')
     .order('created_at', { ascending: false })
 
-  // Cari produk yang ditandai admin sebagai featured. Kalau belum ada yang di-set, fallback ke produk terbaru.
-  const featured = products?.find((p) => p.is_featured)
-  const hero = featured ?? products?.[0]
+  // Hero dihitung dari data penjualan asli (lihat function get_featured_product_id di database),
+  // bukan checkbox manual. Prioritas: terlaris 7 hari terakhir → terlaris sepanjang waktu → produk terbaru.
+  const { data: featuredId } = await supabase.rpc('get_featured_product_id')
+  const hero = products?.find((p) => p.id === featuredId) ?? products?.[0]
   const rest = products?.filter((p) => p.id !== hero?.id) ?? []
 
   return (
@@ -32,7 +33,7 @@ export default async function ShopPage() {
           </div>
           <div className="p-8 flex flex-col justify-center bg-white">
             <span className="inline-block w-fit bg-brick text-white text-[11px] tracking-widest uppercase px-2.5 py-1 mb-4">
-              Pilihan Minggu Ini
+              Terlaris Minggu Ini
             </span>
             <p className="text-xs uppercase tracking-wide text-ink/40 mb-2">{hero.categories?.name}</p>
             <h2 className="font-serif text-3xl font-bold text-navy mb-3 leading-tight">{hero.name}</h2>
@@ -49,7 +50,7 @@ export default async function ShopPage() {
 
       <div className="divide-y-2 divide-stone">
         {rest.map((p) => (
-          <div key={p.id} className="flex items-center gap-5 py-5">
+          <div key={p.id} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 py-5">
             <div className="w-20 h-20 flex-shrink-0 bg-stone/40 overflow-hidden flex items-center justify-center">
               {p.image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -63,14 +64,16 @@ export default async function ShopPage() {
               <p className="text-[11px] uppercase tracking-wide text-ink/40 mb-0.5">
                 {p.categories?.name} · {p.stock > 0 ? `Stok ${p.stock}` : 'Habis'}
               </p>
-              <div className="flex items-baseline">
-                <h3 className="font-serif font-semibold text-lg text-ink whitespace-nowrap">{p.name}</h3>
-                <span className="leader-line" />
+              <div className="flex items-baseline flex-wrap gap-x-2">
+                <h3 className="font-serif font-semibold text-lg text-ink">{p.name}</h3>
+                <span className="leader-line hidden sm:block" />
                 <span className="font-serif font-bold text-navy whitespace-nowrap">Rp {p.price.toLocaleString('id-ID')}</span>
               </div>
             </div>
 
-            <AddToCartButton productId={p.id} disabled={p.stock === 0} />
+            <div className="sm:flex-shrink-0">
+              <AddToCartButton productId={p.id} disabled={p.stock === 0} />
+            </div>
           </div>
         ))}
       </div>

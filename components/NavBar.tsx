@@ -9,11 +9,29 @@ export default function NavBar() {
   const supabase = createClient()
   const router = useRouter()
   const [user, setUser] = useState<{ email?: string } | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    async function loadUser() {
+      const { data } = await supabase.auth.getUser()
+      setUser(data.user)
+      if (data.user) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
+        setIsAdmin(profile?.role === 'admin')
+      } else {
+        setIsAdmin(false)
+      }
+    }
+    loadUser()
+
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
+      if (session?.user) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single()
+        setIsAdmin(profile?.role === 'admin')
+      } else {
+        setIsAdmin(false)
+      }
     })
     return () => listener.subscription.unsubscribe()
   }, [supabase])
@@ -40,7 +58,7 @@ export default function NavBar() {
         <nav className="flex items-center gap-6 text-sm font-medium text-white/70">
           <Link href="/" className="hover:text-white transition">Shop</Link>
           <Link href="/cart" className="hover:text-white transition">Cart</Link>
-          <Link href="/admin/products" className="hover:text-white transition">Admin</Link>
+          {isAdmin && <Link href="/admin/products" className="hover:text-white transition">Admin</Link>}
           {user ? (
             <button onClick={handleLogout} className="text-white/50 hover:text-brick transition">
               Logout

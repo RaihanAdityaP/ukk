@@ -37,8 +37,11 @@ export async function POST(request: NextRequest) {
   const body = await request.json()
   const { name, price, stock, category_id, image_url, description, is_featured } = body
 
-  if (!name || price == null || stock == null) {
+  if (!name?.trim() || price == null || stock == null) {
     return NextResponse.json({ error: 'Nama, harga, dan stok wajib diisi.' }, { status: 400 })
+  }
+  if (price < 0 || stock < 0) {
+    return NextResponse.json({ error: 'Harga dan stok tidak boleh negatif.' }, { status: 400 })
   }
 
   // Kalau produk ini di-set featured, matiin featured di produk lain dulu (cuma boleh 1 featured aktif)

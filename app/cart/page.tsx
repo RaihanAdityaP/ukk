@@ -54,7 +54,7 @@ export default function CartPage() {
         <>
           <div className="divide-y-2 divide-stone mb-8">
             {items.map((item) => (
-              <div key={item.id} className="flex items-center gap-4 py-4">
+              <div key={item.id} className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 py-4">
                 <div className="w-16 h-16 flex-shrink-0 bg-stone/40 overflow-hidden flex items-center justify-center">
                   {item.product?.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -63,19 +63,19 @@ export default function CartPage() {
                     <span className="font-serif text-lg text-navy/20">{item.product?.name?.charAt(0)}</span>
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-[140px]">
                   <p className="font-serif font-semibold truncate">{item.product?.name}</p>
                   <p className="text-sm text-ink/40">Rp {item.product?.price.toLocaleString('id-ID')} / unit</p>
                 </div>
-                <div className="flex items-center border-2 border-ink">
+                <div className="flex items-center border-2 border-ink order-3 sm:order-none">
                   <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-8 h-8 hover:bg-stone/30">−</button>
                   <span className="w-8 text-center text-sm">{item.quantity}</span>
                   <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-8 h-8 hover:bg-stone/30">+</button>
                 </div>
-                <p className="w-28 text-right font-serif font-bold text-navy">
+                <p className="w-full sm:w-28 text-right font-serif font-bold text-navy order-4 sm:order-none">
                   Rp {((item.product?.price ?? 0) * item.quantity).toLocaleString('id-ID')}
                 </p>
-                <button onClick={() => removeItem(item.id)} className="text-ink/30 hover:text-brick text-sm w-5">✕</button>
+                <button onClick={() => removeItem(item.id)} className="text-ink/30 hover:text-brick text-sm w-5 order-3 sm:order-none">✕</button>
               </div>
             ))}
           </div>

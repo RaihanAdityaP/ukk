@@ -6,7 +6,7 @@ import ImageUpload from '@/components/ImageUpload'
 
 export default function NewProductPage() {
   const router = useRouter()
-  const [form, setForm] = useState({ name: '', price: '', stock: '', image_url: '', description: '', is_featured: false })
+  const [form, setForm] = useState({ name: '', price: '', stock: '', image_url: '', description: '' })
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -24,7 +24,6 @@ export default function NewProductPage() {
         stock: Number(form.stock),
         image_url: form.image_url,
         description: form.description,
-        is_featured: form.is_featured,
       }),
     })
 
@@ -86,16 +85,6 @@ export default function NewProductPage() {
             rows={3}
           />
         </div>
-
-        <label className="flex items-center gap-2 text-sm text-ink/70 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={form.is_featured}
-            onChange={(e) => setForm({ ...form, is_featured: e.target.checked })}
-            className="w-4 h-4 accent-navy"
-          />
-          Jadikan &quot;Pilihan Minggu Ini&quot; (tampil besar di halaman utama)
-        </label>
 
         {error && <p className="text-brick text-sm">{error}</p>}
 

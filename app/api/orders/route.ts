@@ -40,6 +40,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Keranjang kosong.' }, { status: 400 })
   }
 
+  // Cek stok masih cukup buat semua item sebelum order dibuat (jaga-jaga stok berubah/habis dibeli orang lain)
+  const outOfStock = cartItems.filter((item) => item.quantity > item.product.stock)
+  if (outOfStock.length > 0) {
+    const names = outOfStock.map((item) => item.product.name).join(', ')
+    return NextResponse.json(
+      { error: `Stok tidak cukup untuk: ${names}. Silakan sesuaikan jumlah di keranjang.` },
+      { status: 400 }
+    )
+  }
+
   const total = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
 
   const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true })
@@ -72,6 +82,14 @@ export async function POST(request: NextRequest) {
 
   const { error: itemsError } = await supabase.from('order_items').insert(orderItemsPayload)
   if (itemsError) return NextResponse.json({ error: itemsError.message }, { status: 500 })
+
+  // Kurangin stok produk sesuai yang dibeli
+  for (const item of cartItems) {
+    await supabase
+      .from('products')
+      .update({ stock: item.product.stock - item.quantity })
+      .eq('id', item.product_id)
+  }
 
   await supabase.from('cart_items').delete().eq('user_id', user.id)
 
