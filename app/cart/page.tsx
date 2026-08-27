@@ -20,8 +20,15 @@ export default function CartPage() {
     loadCart()
   }, [])
 
-  async function updateQuantity(id: string, quantity: number) {
+  const [warningId, setWarningId] = useState<string | null>(null)
+
+  async function updateQuantity(id: string, quantity: number, stock?: number) {
     if (quantity < 1) return
+    if (stock != null && quantity > stock) {
+      setWarningId(id)
+      setTimeout(() => setWarningId(null), 2000)
+      return
+    }
     await fetch(`/api/cart/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -67,10 +74,21 @@ export default function CartPage() {
                   <p className="font-serif font-semibold truncate">{item.product?.name}</p>
                   <p className="text-sm text-ink/40">Rp {item.product?.price.toLocaleString('id-ID')} / unit</p>
                 </div>
-                <div className="flex items-center border-2 border-ink order-3 sm:order-none">
-                  <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="w-8 h-8 hover:bg-stone/30">−</button>
-                  <span className="w-8 text-center text-sm">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="w-8 h-8 hover:bg-stone/30">+</button>
+                <div>
+                  <div className="flex items-center border-2 border-ink order-3 sm:order-none">
+                    <button onClick={() => updateQuantity(item.id, item.quantity - 1, item.product?.stock)} className="w-8 h-8 hover:bg-stone/30">−</button>
+                    <span className="w-8 text-center text-sm">{item.quantity}</span>
+                    <button
+                      onClick={() => updateQuantity(item.id, item.quantity + 1, item.product?.stock)}
+                      disabled={item.product != null && item.quantity >= item.product.stock}
+                      className="w-8 h-8 hover:bg-stone/30 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      +
+                    </button>
+                  </div>
+                  {warningId === item.id && (
+                    <p className="text-[11px] text-brick mt-1 whitespace-nowrap">Stok maksimal: {item.product?.stock}</p>
+                  )}
                 </div>
                 <p className="w-full sm:w-28 text-right font-serif font-bold text-navy order-4 sm:order-none">
                   Rp {((item.product?.price ?? 0) * item.quantity).toLocaleString('id-ID')}

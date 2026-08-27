@@ -1,8 +1,19 @@
 export type Profile = {
   id: string
   full_name: string | null
+  avatar_url: string | null
   role: 'customer' | 'admin'
   created_at: string
+}
+
+export type Review = {
+  id: string
+  product_id: string
+  customer_id: string
+  rating: number
+  comment: string | null
+  created_at: string
+  customer?: { full_name: string | null }
 }
 
 export type Product = {

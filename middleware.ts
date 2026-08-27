@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
-  const needsLogin = path.startsWith('/admin') || path.startsWith('/cart') || path.startsWith('/checkout')
+  const needsLogin = path.startsWith('/admin') || path.startsWith('/cart') || path.startsWith('/checkout') || path.startsWith('/profile')
 
   if (needsLogin && !user) {
     const loginUrl = new URL('/login', request.url)
@@ -46,5 +46,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/cart/:path*', '/checkout/:path*'],
+  matcher: ['/admin/:path*', '/cart/:path*', '/checkout/:path*', '/profile/:path*'],
 }

@@ -35,6 +35,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'product_id wajib diisi' }, { status: 400 })
   }
 
+  // Ambil stok produk buat validasi
+  const { data: product } = await supabase.from('products').select('stock').eq('id', product_id).single()
+  if (!product) {
+    return NextResponse.json({ error: 'Produk tidak ditemukan.' }, { status: 404 })
+  }
+
   const { data: existing } = await supabase
     .from('cart_items')
     .select('*')
@@ -42,10 +48,19 @@ export async function POST(request: Request) {
     .eq('product_id', product_id)
     .maybeSingle()
 
+  const totalAfterAdd = (existing?.quantity ?? 0) + quantity
+  if (totalAfterAdd > product.stock) {
+    const sisa = product.stock - (existing?.quantity ?? 0)
+    return NextResponse.json(
+      { error: sisa > 0 ? `Stok tidak cukup. Kamu sudah punya ${existing?.quantity} di keranjang, sisa stok cuma ${sisa} lagi.` : 'Stok produk ini di keranjangmu sudah mencapai batas maksimal.' },
+      { status: 400 }
+    )
+  }
+
   if (existing) {
     const { data, error } = await supabase
       .from('cart_items')
-      .update({ quantity: existing.quantity + quantity })
+      .update({ quantity: totalAfterAdd })
       .eq('id', existing.id)
       .select()
       .single()

@@ -13,6 +13,25 @@ export async function PUT(
 
   const { quantity } = await request.json()
 
+  if (quantity == null || quantity < 1) {
+    return NextResponse.json({ error: 'Jumlah tidak valid.' }, { status: 400 })
+  }
+
+  // Cek dulu stok produk terkait, jangan sampai quantity di cart ngelebihin stok asli
+  const { data: cartItem } = await supabase
+    .from('cart_items')
+    .select('*, product:products(stock)')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!cartItem) {
+    return NextResponse.json({ error: 'Item tidak ditemukan.' }, { status: 404 })
+  }
+  if (cartItem.product && quantity > cartItem.product.stock) {
+    return NextResponse.json({ error: `Stok tidak cukup. Tersisa ${cartItem.product.stock}.` }, { status: 400 })
+  }
+
   const { data, error } = await supabase
     .from('cart_items')
     .update({ quantity })

@@ -23,7 +23,13 @@ function LoginForm() {
 
     if (signInError || !data.user) {
       setLoading(false)
-      setError('Email atau password salah.')
+      if (signInError?.message.includes('Email not confirmed')) {
+        setError('Email belum dikonfirmasi. Cek inbox/spam kamu untuk link konfirmasi.')
+      } else if (signInError?.message.includes('Invalid login credentials')) {
+        setError('Email atau password salah.')
+      } else {
+        setError(signInError?.message ?? 'Gagal login. Coba lagi.')
+      }
       return
     }
 

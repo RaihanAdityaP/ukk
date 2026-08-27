@@ -18,7 +18,9 @@ export async function GET() {
   return NextResponse.json(data)
 }
 
-// POST /api/orders → checkout, bikin order baru dari cart milik user yang login
+// POST /api/orders → checkout. Semua logic (cek stok, kurangin stok, buat order)
+// dijalankan atomik lewat function database checkout_cart, biar aman dari race condition
+// kalau ada 2 orang checkout barang yang sama bersamaan pas stok tipis.
 export async function POST(request: NextRequest) {
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
@@ -30,68 +32,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Semua field wajib diisi.' }, { status: 400 })
   }
 
-  const { data: cartItems, error: cartError } = await supabase
-    .from('cart_items')
-    .select('*, product:products(*)')
-    .eq('user_id', user.id)
+  const { data, error } = await supabase.rpc('checkout_cart', {
+    p_customer_name: customer_name,
+    p_customer_phone: customer_phone,
+    p_customer_address: customer_address,
+    p_payment_method: payment_method,
+  })
 
-  if (cartError) return NextResponse.json({ error: cartError.message }, { status: 500 })
-  if (!cartItems || cartItems.length === 0) {
-    return NextResponse.json({ error: 'Keranjang kosong.' }, { status: 400 })
+  if (error) {
+    // Pesan error dari database (misal "Stok tidak cukup untuk: X") langsung diterusin ke user
+    return NextResponse.json({ error: error.message }, { status: 400 })
   }
 
-  // Cek stok masih cukup buat semua item sebelum order dibuat (jaga-jaga stok berubah/habis dibeli orang lain)
-  const outOfStock = cartItems.filter((item) => item.quantity > item.product.stock)
-  if (outOfStock.length > 0) {
-    const names = outOfStock.map((item) => item.product.name).join(', ')
-    return NextResponse.json(
-      { error: `Stok tidak cukup untuk: ${names}. Silakan sesuaikan jumlah di keranjang.` },
-      { status: 400 }
-    )
-  }
-
-  const total = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
-
-  const { count } = await supabase.from('orders').select('*', { count: 'exact', head: true })
-  const orderCode = `WJY-${String((count ?? 0) + 1).padStart(4, '0')}`
-
-  const { data: order, error: orderError } = await supabase
-    .from('orders')
-    .insert({
-      order_code: orderCode,
-      customer_id: user.id,
-      customer_name,
-      customer_phone,
-      customer_address,
-      payment_method,
-      total,
-      status: 'pending',
-    })
-    .select()
-    .single()
-
-  if (orderError) return NextResponse.json({ error: orderError.message }, { status: 500 })
-
-  const orderItemsPayload = cartItems.map((item) => ({
-    order_id: order.id,
-    product_id: item.product_id,
-    product_name: item.product.name,
-    price: item.product.price,
-    quantity: item.quantity,
-  }))
-
-  const { error: itemsError } = await supabase.from('order_items').insert(orderItemsPayload)
-  if (itemsError) return NextResponse.json({ error: itemsError.message }, { status: 500 })
-
-  // Kurangin stok produk sesuai yang dibeli
-  for (const item of cartItems) {
-    await supabase
-      .from('products')
-      .update({ stock: item.product.stock - item.quantity })
-      .eq('id', item.product_id)
-  }
-
-  await supabase.from('cart_items').delete().eq('user_id', user.id)
-
-  return NextResponse.json(order, { status: 201 })
+  const result = Array.isArray(data) ? data[0] : data
+  return NextResponse.json({ id: result.order_id, order_code: result.order_code }, { status: 201 })
 }
