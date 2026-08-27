@@ -1,6 +1,7 @@
 import { createServerSupabase } from '@/lib/supabase-server'
 import AddToCartButton from '@/components/AddToCartButton'
 import SearchBar from '@/components/SearchBar'
+import FilterBar from '@/components/FilterBar'
 import Link from 'next/link'
 import { Product } from '@/lib/types'
 
@@ -9,23 +10,40 @@ type ProductWithCategory = Product & { categories?: { name: string } }
 export default async function ShopPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string }>
+  searchParams: Promise<{ search?: string; category?: string; minPrice?: string; maxPrice?: string }>
 }) {
-  const { search } = await searchParams
+  const { search, category, minPrice, maxPrice } = await searchParams
   const supabase = await createServerSupabase()
 
+  const { data: categories } = await supabase.from('categories').select('*').order('name')
+
   let query = supabase.from('products').select('*, categories(name)').order('created_at', { ascending: false })
+
   if (search) {
     query = query.ilike('name', `%${search}%`)
   }
+  if (category) {
+    const matchedCategory = categories?.find((c) => c.name.toLowerCase() === category.toLowerCase())
+    if (matchedCategory) {
+      query = query.eq('category_id', matchedCategory.id)
+    }
+  }
+  if (minPrice) {
+    query = query.gte('price', Number(minPrice))
+  }
+  if (maxPrice) {
+    query = query.lte('price', Number(maxPrice))
+  }
+
   const { data: products } = await query
 
-  // Hero (Terlaris Minggu Ini) cuma ditampilin kalau lagi gak nyari apa-apa —
-  // pas hasil pencarian, langsung tampilin daftar hasilnya aja
+  const isFiltering = Boolean(search || category || minPrice || maxPrice)
+
+  // Hero (Terlaris Minggu Ini) cuma ditampilin kalau lagi gak nyari/filter apa-apa
   let hero: ProductWithCategory | null | undefined = null
   let rest: ProductWithCategory[] = products ?? []
 
-  if (!search) {
+  if (!isFiltering) {
     const { data: featuredId } = await supabase.rpc('get_featured_product_id')
     hero = products?.find((p) => p.id === featuredId) ?? products?.[0]
     rest = products?.filter((p) => p.id !== hero?.id) ?? []
@@ -39,6 +57,7 @@ export default async function ShopPage({
       </div>
 
       <SearchBar />
+      <FilterBar categories={categories ?? []} />
 
       {search && (
         <p className="text-sm text-ink/50 mb-6">
@@ -107,13 +126,11 @@ export default async function ShopPage({
         ))}
       </div>
 
-      {products && products.length === 0 && search && (
-        <p className="text-center text-ink/40 py-16">
-          Tidak ada produk yang cocok dengan &quot;{search}&quot;.
-        </p>
+      {products && products.length === 0 && isFiltering && (
+        <p className="text-center text-ink/40 py-16">Tidak ada produk yang cocok dengan filter ini.</p>
       )}
 
-      {(!products || products.length === 0) && !search && (
+      {(!products || products.length === 0) && !isFiltering && (
         <p className="text-center text-ink/40 py-16">Belum ada produk. Admin bisa tambahkan lewat halaman Admin.</p>
       )}
     </main>
