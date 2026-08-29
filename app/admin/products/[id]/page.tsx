@@ -3,6 +3,8 @@
 import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import ImageUpload from '@/components/ImageUpload'
+import { ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 
 export default function EditProductPage() {
   const router = useRouter()
@@ -64,50 +66,53 @@ export default function EditProductPage() {
   }
 
   return (
-    <main className="max-w-lg mx-auto px-4 py-10">
-      <p className="text-xs uppercase tracking-widest text-ink/40 mb-1">Admin</p>
-      <h1 className="font-serif text-3xl font-bold text-navy border-b-2 border-ink pb-3 mb-8">Edit Produk</h1>
+    <main className="max-w-lg mx-auto px-4 py-8">
+      <Link href="/admin/products" className="flex items-center gap-1.5 text-sm text-ink/50 hover:text-navy mb-4 transition">
+        <ArrowLeft className="w-4 h-4" />
+        Kelola Produk
+      </Link>
+      <h1 className="font-serif text-3xl font-bold text-navy mb-6">Edit Produk</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl p-5 space-y-4">
         <ImageUpload value={form.image_url} onChange={(url) => setForm({ ...form, image_url: url })} />
 
         <div>
-          <label className="block text-xs uppercase tracking-wide text-ink/50 mb-1.5">Nama Produk</label>
+          <label className="block text-xs font-medium text-ink/50 mb-1.5">Nama Produk</label>
           <input
             required
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="w-full border-2 border-stone px-3 py-2.5 bg-white focus:outline-none focus:border-navy"
+            className="w-full rounded-lg border border-stone px-3 py-2.5 focus:outline-none focus:border-navy"
           />
         </div>
         <div className="flex gap-4">
           <div className="flex-1">
-            <label className="block text-xs uppercase tracking-wide text-ink/50 mb-1.5">Harga (Rp)</label>
+            <label className="block text-xs font-medium text-ink/50 mb-1.5">Harga (Rp)</label>
             <input
               type="number"
               required
               value={form.price}
               onChange={(e) => setForm({ ...form, price: e.target.value })}
-              className="w-full border-2 border-stone px-3 py-2.5 bg-white focus:outline-none focus:border-navy"
+              className="w-full rounded-lg border border-stone px-3 py-2.5 focus:outline-none focus:border-navy"
             />
           </div>
           <div className="flex-1">
-            <label className="block text-xs uppercase tracking-wide text-ink/50 mb-1.5">Stok</label>
+            <label className="block text-xs font-medium text-ink/50 mb-1.5">Stok</label>
             <input
               type="number"
               required
               value={form.stock}
               onChange={(e) => setForm({ ...form, stock: e.target.value })}
-              className="w-full border-2 border-stone px-3 py-2.5 bg-white focus:outline-none focus:border-navy"
+              className="w-full rounded-lg border border-stone px-3 py-2.5 focus:outline-none focus:border-navy"
             />
           </div>
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-wide text-ink/50 mb-1.5">Deskripsi (opsional)</label>
+          <label className="block text-xs font-medium text-ink/50 mb-1.5">Deskripsi (opsional)</label>
           <textarea
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            className="w-full border-2 border-stone px-3 py-2.5 bg-white focus:outline-none focus:border-navy"
+            className="w-full rounded-lg border border-stone px-3 py-2.5 focus:outline-none focus:border-navy"
             rows={3}
           />
         </div>
@@ -118,14 +123,14 @@ export default function EditProductPage() {
           <button
             type="submit"
             disabled={saving}
-            className="bg-accent text-navy font-bold uppercase tracking-wide text-sm px-6 py-2.5 hover:bg-brick hover:text-white disabled:opacity-50 transition"
+            className="bg-accent text-navy font-semibold px-6 py-2.5 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition"
           >
             {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
           </button>
           <button
             type="button"
             onClick={() => router.push('/admin/products')}
-            className="border-2 border-stone px-6 py-2.5 text-ink/60 hover:border-ink transition"
+            className="border border-stone px-6 py-2.5 rounded-lg text-ink/60 hover:border-navy transition"
           >
             Batal
           </button>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { SlidersHorizontal } from 'lucide-react'
 
 type Category = { id: string; name: string }
 
@@ -12,6 +13,7 @@ export default function FilterBar({ categories }: { categories: Category[] }) {
   const activeCategory = searchParams.get('category') ?? ''
   const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') ?? '')
   const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') ?? '')
+  const [priceOpen, setPriceOpen] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -22,11 +24,8 @@ export default function FilterBar({ categories }: { categories: Category[] }) {
   function updateParams(updates: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString())
     Object.entries(updates).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value)
-      } else {
-        params.delete(key)
-      }
+      if (value) params.set(key, value)
+      else params.delete(key)
     })
     router.replace(`/?${params.toString()}`)
   }
@@ -41,25 +40,19 @@ export default function FilterBar({ categories }: { categories: Category[] }) {
     else setMaxPrice(digits)
 
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      updateParams({ [type]: digits })
-    }, 500)
+    debounceRef.current = setTimeout(() => updateParams({ [type]: digits }), 500)
   }
 
-  const hasActiveFilters = activeCategory || minPrice || maxPrice
-
-  function clearFilters() {
-    updateParams({ category: '', minPrice: '', maxPrice: '' })
-  }
+  const hasPriceFilter = minPrice || maxPrice
+  const hasActiveFilters = activeCategory || hasPriceFilter
 
   return (
-    <div className="mb-6">
-      {/* Kategori */}
-      <div className="flex flex-wrap gap-2 mb-3">
+    <div className="mb-5">
+      <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => updateParams({ category: '' })}
-          className={`text-xs font-medium uppercase tracking-wide px-3 py-1.5 border-2 transition ${
-            !activeCategory ? 'bg-navy text-white border-navy' : 'border-stone text-ink/60 hover:border-navy'
+          className={`text-xs font-medium px-3.5 py-1.5 rounded-full transition ${
+            !activeCategory ? 'bg-navy text-white' : 'bg-white text-ink/60 hover:bg-stone/30'
           }`}
         >
           Semua
@@ -71,43 +64,59 @@ export default function FilterBar({ categories }: { categories: Category[] }) {
             <button
               key={cat.id}
               onClick={() => handleCategoryClick(slug)}
-              className={`text-xs font-medium uppercase tracking-wide px-3 py-1.5 border-2 transition ${
-                isActive ? 'bg-navy text-white border-navy' : 'border-stone text-ink/60 hover:border-navy'
+              className={`text-xs font-medium px-3.5 py-1.5 rounded-full transition ${
+                isActive ? 'bg-navy text-white' : 'bg-white text-ink/60 hover:bg-stone/30'
               }`}
             >
               {cat.name}
             </button>
           )
         })}
-      </div>
 
-      {/* Rentang harga */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs uppercase tracking-wide text-ink/50">Harga:</span>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={minPrice}
-          onChange={(e) => handlePriceChange('minPrice', e.target.value)}
-          placeholder="Min"
-          className="w-24 border-2 border-stone px-2 py-1 text-sm bg-white focus:outline-none focus:border-navy"
-        />
-        <span className="text-ink/30">—</span>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={maxPrice}
-          onChange={(e) => handlePriceChange('maxPrice', e.target.value)}
-          placeholder="Max"
-          className="w-24 border-2 border-stone px-2 py-1 text-sm bg-white focus:outline-none focus:border-navy"
-        />
+        <button
+          onClick={() => setPriceOpen((v) => !v)}
+          className={`flex items-center gap-1.5 text-xs font-medium px-3.5 py-1.5 rounded-full transition ${
+            hasPriceFilter || priceOpen ? 'bg-navy text-white' : 'bg-white text-ink/60 hover:bg-stone/30'
+          }`}
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5" />
+          Harga
+        </button>
 
         {hasActiveFilters && (
-          <button onClick={clearFilters} className="text-xs text-brick font-medium hover:underline ml-2">
-            Hapus semua filter
+          <button
+            onClick={() => {
+              updateParams({ category: '', minPrice: '', maxPrice: '' })
+              setPriceOpen(false)
+            }}
+            className="text-xs text-brick font-medium hover:underline"
+          >
+            Hapus filter
           </button>
         )}
       </div>
+
+      {priceOpen && (
+        <div className="flex items-center gap-2 mt-2.5 bg-white rounded-lg p-3 w-fit">
+          <input
+            type="text"
+            inputMode="numeric"
+            value={minPrice}
+            onChange={(e) => handlePriceChange('minPrice', e.target.value)}
+            placeholder="Min"
+            className="w-24 rounded-md border border-stone px-2.5 py-1.5 text-sm focus:outline-none focus:border-navy"
+          />
+          <span className="text-ink/30 text-sm">—</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={maxPrice}
+            onChange={(e) => handlePriceChange('maxPrice', e.target.value)}
+            placeholder="Max"
+            className="w-24 rounded-md border border-stone px-2.5 py-1.5 text-sm focus:outline-none focus:border-navy"
+          />
+        </div>
+      )}
     </div>
   )
 }

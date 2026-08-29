@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import AvatarUpload from '@/components/AvatarUpload'
+import { LogOut } from 'lucide-react'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -58,7 +59,7 @@ export default function ProfilePage() {
       .eq('id', user.id)
 
     setSavingProfile(false)
-    setProfileMsg(error ? 'Gagal menyimpan. Coba lagi.' : 'Profil berhasil diperbarui ✓')
+    setProfileMsg(error ? 'Gagal menyimpan. Coba lagi.' : 'Profil berhasil diperbarui')
     setTimeout(() => setProfileMsg(''), 2500)
   }
 
@@ -85,7 +86,7 @@ export default function ProfilePage() {
       return
     }
 
-    setPasswordMsg('Password berhasil diganti ✓')
+    setPasswordMsg('Password berhasil diganti')
     setNewPassword('')
     setConfirmPassword('')
     setTimeout(() => setPasswordMsg(''), 2500)
@@ -102,35 +103,35 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="max-w-lg mx-auto px-4 py-10">
-      <h1 className="font-serif text-3xl font-bold text-navy border-b-2 border-ink pb-3 mb-8">Profil Saya</h1>
+    <main className="max-w-lg mx-auto px-4 py-8">
+      <h1 className="font-serif text-3xl font-bold text-navy mb-6">Profil Saya</h1>
 
-      <form onSubmit={handleSaveProfile} className="space-y-5 mb-12">
-        <div className="flex justify-center mb-2">
+      <form onSubmit={handleSaveProfile} className="bg-white rounded-xl p-5 space-y-4 mb-6">
+        <div className="flex justify-center mb-1">
           <AvatarUpload value={avatarUrl} fallbackLetter={fullName.charAt(0) || email.charAt(0)} onChange={setAvatarUrl} />
         </div>
 
-        <div className="text-center mb-4">
-          <span className="inline-block text-[11px] uppercase tracking-widest bg-navy/10 text-navy px-2.5 py-1">
+        <div className="text-center mb-2">
+          <span className="inline-block text-xs font-medium bg-navy/10 text-navy px-3 py-1 rounded-full">
             {role === 'admin' ? 'Admin' : 'Customer'}
           </span>
         </div>
 
         <div>
-          <label className="block text-xs uppercase tracking-wide text-ink/50 mb-1.5">Nama Lengkap</label>
+          <label className="block text-xs font-medium text-ink/50 mb-1.5">Nama Lengkap</label>
           <input
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="w-full border-2 border-stone px-3 py-2.5 bg-white focus:outline-none focus:border-navy"
+            className="w-full rounded-lg border border-stone px-3 py-2.5 focus:outline-none focus:border-navy"
           />
         </div>
 
         <div>
-          <label className="block text-xs uppercase tracking-wide text-ink/50 mb-1.5">Email</label>
+          <label className="block text-xs font-medium text-ink/50 mb-1.5">Email</label>
           <input
             value={email}
             disabled
-            className="w-full border-2 border-stone px-3 py-2.5 bg-stone/20 text-ink/50 cursor-not-allowed"
+            className="w-full rounded-lg border border-stone px-3 py-2.5 bg-stone/20 text-ink/50 cursor-not-allowed"
           />
           <p className="text-xs text-ink/40 mt-1">Email tidak bisa diubah lewat halaman ini.</p>
         </div>
@@ -140,32 +141,32 @@ export default function ProfilePage() {
         <button
           type="submit"
           disabled={savingProfile}
-          className="bg-accent text-navy font-bold uppercase tracking-wide text-sm px-6 py-2.5 hover:bg-brick hover:text-white disabled:opacity-50 transition"
+          className="bg-accent text-navy font-semibold px-6 py-2.5 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition"
         >
           {savingProfile ? 'Menyimpan...' : 'Simpan Profil'}
         </button>
       </form>
 
-      <div className="border-t-2 border-stone pt-8 mb-8">
+      <div className="bg-white rounded-xl p-5 mb-6">
         <h2 className="font-serif text-xl font-bold text-navy mb-4">Ganti Password</h2>
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
-            <label className="block text-xs uppercase tracking-wide text-ink/50 mb-1.5">Password Baru</label>
+            <label className="block text-xs font-medium text-ink/50 mb-1.5">Password Baru</label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Minimal 6 karakter"
-              className="w-full border-2 border-stone px-3 py-2.5 bg-white focus:outline-none focus:border-navy"
+              className="w-full rounded-lg border border-stone px-3 py-2.5 focus:outline-none focus:border-navy"
             />
           </div>
           <div>
-            <label className="block text-xs uppercase tracking-wide text-ink/50 mb-1.5">Konfirmasi Password Baru</label>
+            <label className="block text-xs font-medium text-ink/50 mb-1.5">Konfirmasi Password Baru</label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full border-2 border-stone px-3 py-2.5 bg-white focus:outline-none focus:border-navy"
+              className="w-full rounded-lg border border-stone px-3 py-2.5 focus:outline-none focus:border-navy"
             />
           </div>
 
@@ -175,14 +176,15 @@ export default function ProfilePage() {
           <button
             type="submit"
             disabled={savingPassword}
-            className="border-2 border-navy text-navy font-bold uppercase tracking-wide text-sm px-6 py-2.5 hover:bg-navy hover:text-white disabled:opacity-50 transition"
+            className="border-2 border-navy text-navy font-semibold px-6 py-2.5 rounded-lg hover:bg-navy hover:text-white disabled:opacity-50 transition"
           >
             {savingPassword ? 'Menyimpan...' : 'Ganti Password'}
           </button>
         </form>
       </div>
 
-      <button onClick={handleLogout} className="text-brick text-sm font-medium hover:underline">
+      <button onClick={handleLogout} className="flex items-center gap-2 text-brick text-sm font-medium hover:underline">
+        <LogOut className="w-4 h-4" />
         Logout dari akun ini
       </button>
     </main>

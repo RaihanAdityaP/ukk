@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { generateId } from '@/lib/utils'
+import { Upload, X, Camera } from 'lucide-react'
 
 export default function ImageUpload({
   value,
@@ -40,16 +41,16 @@ export default function ImageUpload({
 
   return (
     <div>
-      <label className="block text-xs uppercase tracking-wide text-ink/50 mb-1.5">Foto Produk</label>
+      <label className="block text-xs font-medium text-ink/50 mb-1.5">Foto Produk</label>
 
       {value ? (
-        <div className="relative w-full h-44 mb-1 border-2 border-ink overflow-hidden group">
+        <div className="relative w-full h-44 mb-1 rounded-xl overflow-hidden group">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={value} alt="Preview" className="w-full h-full object-cover" />
 
-          {/* Klik di area gambar buat langsung ganti foto (tanpa hapus dulu) */}
-          <label className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-center justify-center cursor-pointer">
-            <span className="opacity-0 group-hover:opacity-100 text-white text-sm font-semibold transition">
+          <label className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex flex-col items-center justify-center gap-1.5 cursor-pointer">
+            <Camera className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition" />
+            <span className="opacity-0 group-hover:opacity-100 text-white text-sm font-medium transition">
               {uploading ? 'Mengupload...' : 'Klik untuk ganti foto'}
             </span>
             <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" disabled={uploading} />
@@ -61,20 +62,20 @@ export default function ImageUpload({
               e.stopPropagation()
               onChange('')
             }}
-            className="absolute top-2 right-2 bg-white text-brick text-xs font-semibold px-2 py-1 opacity-0 group-hover:opacity-100 transition"
+            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white text-brick flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
           >
-            Hapus
+            <X className="w-4 h-4" />
           </button>
         </div>
       ) : (
-        <label className="flex flex-col items-center justify-center w-full h-44 mb-1 border-2 border-dashed border-stone cursor-pointer hover:border-navy transition text-ink/40 text-sm gap-1">
-          <span className="text-2xl">＋</span>
+        <label className="flex flex-col items-center justify-center w-full h-44 mb-1 rounded-xl border-2 border-dashed border-stone cursor-pointer hover:border-navy transition text-ink/40 text-sm gap-1.5">
+          <Upload className="w-5 h-5" />
           {uploading ? 'Mengupload...' : 'Klik untuk pilih gambar'}
           <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" disabled={uploading} />
         </label>
       )}
 
-      {error && <p className="text-brick text-xs">{error}</p>}
+      {error && <p className="text-brick text-xs mt-1">{error}</p>}
     </div>
   )
 }

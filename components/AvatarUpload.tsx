@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { generateId } from '@/lib/utils'
+import { Camera } from 'lucide-react'
 
 export default function AvatarUpload({
   value,
@@ -51,15 +52,15 @@ export default function AvatarUpload({
 
   return (
     <div className="flex flex-col items-center gap-3">
-      <div className="relative w-28 h-28 rounded-full border-2 border-ink overflow-hidden bg-stone/40 flex items-center justify-center group">
+      <div className="relative w-28 h-28 rounded-full overflow-hidden bg-stone/40 flex items-center justify-center group">
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={value} alt="Foto profil" className="w-full h-full object-cover" />
         ) : (
           <span className="font-serif text-4xl text-navy/30">{fallbackLetter}</span>
         )}
-        <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs cursor-pointer">
-          {uploading ? '...' : 'Ganti'}
+        <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white cursor-pointer">
+          {uploading ? <span className="text-xs">...</span> : <Camera className="w-5 h-5" />}
           <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" disabled={uploading} />
         </label>
       </div>

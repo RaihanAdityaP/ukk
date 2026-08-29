@@ -47,10 +47,9 @@ function LoginForm() {
 
   return (
     <main className="min-h-screen grid lg:grid-cols-2">
-      {/* Panel kiri — brand */}
       <div className="hidden lg:flex flex-col justify-between bg-navy text-white p-12">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 bg-accent flex items-center justify-center text-navy font-bold font-serif">W</div>
+          <div className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center text-navy font-bold font-serif">W</div>
           <span className="font-serif text-xl font-bold">Wijaya Living & Elektronik</span>
         </div>
         <div>
@@ -62,34 +61,33 @@ function LoginForm() {
         <div className="text-white/30 text-xs">© 2026 Wijaya Living & Elektronik</div>
       </div>
 
-      {/* Panel kanan — form */}
       <div className="flex items-center justify-center px-6 py-16 bg-paper">
         <form onSubmit={handleLogin} className="w-full max-w-sm">
           <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-8 h-8 bg-navy flex items-center justify-center text-white font-bold text-sm font-serif">W</div>
+            <div className="w-8 h-8 rounded-lg bg-navy flex items-center justify-center text-white font-bold text-sm font-serif">W</div>
             <span className="font-serif font-bold text-navy">Wijaya</span>
           </div>
 
           <h1 className="font-serif text-2xl font-bold text-navy mb-1">Masuk ke akun kamu</h1>
           <p className="text-ink/50 text-sm mb-6">Belum punya akun? <Link href="/register" className="text-brick font-semibold hover:underline">Daftar di sini</Link></p>
 
-          <label className="block text-xs uppercase tracking-wide text-ink/50 mb-1.5">Email</label>
+          <label className="block text-xs font-medium text-ink/50 mb-1.5">Email</label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border-2 border-stone px-3 py-2.5 mb-4 bg-white focus:outline-none focus:border-navy"
+            className="w-full rounded-lg border border-stone px-3 py-2.5 mb-4 bg-white focus:outline-none focus:border-navy"
             placeholder="nama@email.com"
           />
 
-          <label className="block text-xs uppercase tracking-wide text-ink/50 mb-1.5">Password</label>
+          <label className="block text-xs font-medium text-ink/50 mb-1.5">Password</label>
           <input
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border-2 border-stone px-3 py-2.5 mb-5 bg-white focus:outline-none focus:border-navy"
+            className="w-full rounded-lg border border-stone px-3 py-2.5 mb-5 bg-white focus:outline-none focus:border-navy"
             placeholder="••••••••"
           />
 
@@ -98,7 +96,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-accent text-navy font-bold uppercase tracking-wide text-sm py-3 hover:bg-brick hover:text-white disabled:opacity-50 transition"
+            className="w-full bg-accent text-navy font-semibold py-3 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition"
           >
             {loading ? 'Memproses...' : 'Login'}
           </button>

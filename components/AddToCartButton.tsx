@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Plus, Minus, X, Image as ImageIcon } from 'lucide-react'
 
 export default function AddToCartButton({
   productId,
@@ -10,6 +11,7 @@ export default function AddToCartButton({
   imageUrl,
   disabled,
   maxStock,
+  compact,
 }: {
   productId: string
   productName?: string
@@ -17,6 +19,7 @@ export default function AddToCartButton({
   imageUrl?: string | null
   disabled?: boolean
   maxStock?: number
+  compact?: boolean
 }) {
   const router = useRouter()
   const [modalOpen, setModalOpen] = useState(false)
@@ -38,7 +41,6 @@ export default function AddToCartButton({
   }
 
   async function handleConfirm() {
-    // Jaga-jaga kalau field sempat dikosongin tapi belum blur pas tombol Konfirmasi diklik
     const finalQty = qtyText === '' || parseInt(qtyText, 10) < 1 ? 1 : quantity
     setLoading(true)
 
@@ -77,13 +79,25 @@ export default function AddToCartButton({
 
   return (
     <>
-      <button
-        onClick={openModal}
-        disabled={disabled}
-        className="bg-navy text-white text-xs font-semibold uppercase tracking-wide px-4 py-2 disabled:opacity-30 hover:bg-brick transition whitespace-nowrap"
-      >
-        {disabled ? 'Stok Habis' : 'Tambah'}
-      </button>
+      {compact ? (
+        <button
+          onClick={openModal}
+          disabled={disabled}
+          className="w-7 h-7 rounded-lg bg-navy text-white flex items-center justify-center hover:bg-brick disabled:opacity-30 disabled:bg-stone transition ml-auto"
+          aria-label="Tambah ke keranjang"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      ) : (
+        <button
+          onClick={openModal}
+          disabled={disabled}
+          className="flex items-center gap-1.5 bg-accent text-navy text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-30 hover:bg-brick hover:text-white transition whitespace-nowrap"
+        >
+          <Plus className="w-4 h-4" />
+          {disabled ? 'Stok Habis' : 'Tambah'}
+        </button>
+      )}
 
       {/* Modal pilih jumlah */}
       {modalOpen && (
@@ -92,24 +106,24 @@ export default function AddToCartButton({
           onClick={() => setModalOpen(false)}
         >
           <div
-            className="relative bg-white border-2 border-ink w-full max-w-sm p-7 shadow-2xl"
+            className="relative bg-white rounded-2xl w-full max-w-sm p-7 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setModalOpen(false)}
-              className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center text-ink/40 hover:text-brick transition text-lg"
+              className="absolute top-4 right-4 w-7 h-7 rounded-full flex items-center justify-center text-ink/40 hover:bg-stone/30 hover:text-brick transition"
               aria-label="Tutup"
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
 
             <div className="flex items-center gap-3 mb-6 pr-6">
               {imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={imageUrl} alt={productName} className="w-14 h-14 object-cover border border-stone flex-shrink-0" />
+                <img src={imageUrl} alt={productName} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
               ) : (
-                <div className="w-14 h-14 bg-stone/40 flex items-center justify-center flex-shrink-0">
-                  <span className="font-serif text-xl text-navy/20">{(productName ?? 'P').charAt(0)}</span>
+                <div className="w-14 h-14 rounded-lg bg-stone/40 flex items-center justify-center flex-shrink-0">
+                  <ImageIcon className="w-5 h-5 text-navy/20" />
                 </div>
               )}
               <div className="min-w-0">
@@ -122,16 +136,15 @@ export default function AddToCartButton({
               <div className="flex items-center gap-3 bg-stone/25 rounded-full px-2.5 py-1.5">
                 <button
                   onClick={() => updateQuantity(quantity - 1)}
-                  className="w-8 h-8 rounded-full bg-navy text-white text-base font-bold flex items-center justify-center hover:bg-brick active:scale-90 transition shadow-sm"
+                  className="w-8 h-8 rounded-full bg-navy text-white flex items-center justify-center hover:bg-brick active:scale-90 transition"
                 >
-                  −
+                  <Minus className="w-3.5 h-3.5" />
                 </button>
                 <input
                   type="text"
                   inputMode="numeric"
                   value={qtyText}
                   onChange={(e) => {
-                    // Boleh dikosongin sementara pas lagi ngetik, gak langsung dipaksa balik ke 1
                     const digits = e.target.value.replace(/[^0-9]/g, '')
                     setQtyText(digits)
                     if (digits !== '') {
@@ -140,7 +153,6 @@ export default function AddToCartButton({
                     }
                   }}
                   onBlur={() => {
-                    // Kalau ditinggal kosong atau gak valid, baru dirapiin balik ke angka yang valid
                     if (qtyText === '' || parseInt(qtyText, 10) < 1) {
                       updateQuantity(1)
                     } else {
@@ -151,9 +163,9 @@ export default function AddToCartButton({
                 />
                 <button
                   onClick={() => updateQuantity(quantity + 1)}
-                  className="w-8 h-8 rounded-full bg-accent text-navy text-base font-bold flex items-center justify-center hover:bg-brick hover:text-white active:scale-90 transition shadow-sm"
+                  className="w-8 h-8 rounded-full bg-accent text-navy flex items-center justify-center hover:bg-brick hover:text-white active:scale-90 transition"
                 >
-                  +
+                  <Plus className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -163,7 +175,7 @@ export default function AddToCartButton({
             )}
 
             {price != null && (
-              <div className="flex items-center justify-between border-t-2 border-stone pt-4 mb-5">
+              <div className="flex items-center justify-between border-t border-stone pt-4 mb-5">
                 <span className="text-sm text-ink/60">Subtotal</span>
                 <span className="font-serif text-xl font-bold text-navy">
                   Rp {(price * quantity).toLocaleString('id-ID')}
@@ -174,7 +186,7 @@ export default function AddToCartButton({
             <button
               onClick={handleConfirm}
               disabled={loading}
-              className="w-full bg-accent text-navy font-bold uppercase tracking-wide text-sm py-3 hover:bg-brick hover:text-white disabled:opacity-50 transition"
+              className="w-full bg-accent text-navy font-semibold text-sm py-3 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition"
             >
               {loading ? 'Menambahkan...' : 'Konfirmasi'}
             </button>
@@ -186,8 +198,8 @@ export default function AddToCartButton({
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm">
           <div
-            className={`border-2 px-4 py-3 text-sm font-medium text-white shadow-lg ${
-              toast.type === 'success' ? 'bg-navy border-navy' : 'bg-brick border-brick'
+            className={`rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg ${
+              toast.type === 'success' ? 'bg-navy' : 'bg-brick'
             }`}
           >
             {toast.text}
