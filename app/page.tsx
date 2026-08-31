@@ -112,12 +112,16 @@ export default async function ShopPage({
             <Link href={`/product/${hero.id}`}>
               <h2 className="font-serif text-xl font-bold text-navy mb-1.5 hover:text-brick transition">{hero.name}</h2>
             </Link>
-            {heroRating && (
-              <div className="flex items-center gap-1.5 mb-3">
-                <Star className="w-3.5 h-3.5 fill-accent text-accent" />
-                <span className="text-xs text-ink/50">{heroRating.avg.toFixed(1)} · {heroRating.count} ulasan</span>
-              </div>
-            )}
+            <div className="flex items-center gap-1.5 mb-3">
+              {heroRating && (
+                <>
+                  <Star className="w-3.5 h-3.5 fill-accent text-accent" />
+                  <span className="text-xs text-ink/50">{heroRating.avg.toFixed(1)} · {heroRating.count} ulasan</span>
+                  <span className="text-xs text-ink/30">·</span>
+                </>
+              )}
+              <span className="text-xs text-ink/50">{hero.stock > 0 ? `Stok ${hero.stock}` : 'Habis'}</span>
+            </div>
             <div className="flex items-center justify-between">
               <span className="font-semibold text-lg text-ink">Rp {hero.price.toLocaleString('id-ID')}</span>
               <AddToCartButton productId={hero.id} productName={hero.name} price={hero.price} imageUrl={hero.image_url} maxStock={hero.stock} disabled={hero.stock === 0} />

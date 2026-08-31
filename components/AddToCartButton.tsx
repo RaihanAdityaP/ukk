@@ -35,13 +35,25 @@ export default function AddToCartButton({
   }
 
   function updateQuantity(newQty: number) {
-    const clamped = maxStock ? Math.min(maxStock, Math.max(1, newQty)) : Math.max(1, newQty)
+    const clamped = Math.max(1, newQty)
     setQuantity(clamped)
     setQtyText(String(clamped))
   }
 
+  function showError(text: string) {
+    setToast({ type: 'error', text })
+    setTimeout(() => setToast(null), 3000)
+  }
+
   async function handleConfirm() {
     const finalQty = qtyText === '' || parseInt(qtyText, 10) < 1 ? 1 : quantity
+
+    if (maxStock != null && finalQty > maxStock) {
+      setModalOpen(false)
+      showError(`Jumlah melebihi stok tersedia (${maxStock}).`)
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -149,7 +161,7 @@ export default function AddToCartButton({
                     setQtyText(digits)
                     if (digits !== '') {
                       const parsed = parseInt(digits, 10)
-                      setQuantity(maxStock ? Math.min(maxStock, Math.max(1, parsed)) : Math.max(1, parsed))
+                      setQuantity(Math.max(1, parsed))
                     }
                   }}
                   onBlur={() => {
