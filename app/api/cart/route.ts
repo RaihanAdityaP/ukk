@@ -1,31 +1,29 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabase } from '@/lib/supabase-server'
+import { CartService } from '@/lib/services/CartService'
 
 // GET /api/cart → tampil isi keranjang milik user yang sedang login
 export async function GET() {
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) {
     return NextResponse.json({ error: 'Harus login dulu.' }, { status: 401 })
   }
 
-  const { data, error } = await supabase
-    .from('cart_items')
-    .select('*, product:products(*)')
-    .eq('user_id', user.id)
+  const service = new CartService(supabase)
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  try {
+    const data = await service.listByUser(user.id)
+    return NextResponse.json(data)
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 })
   }
-  return NextResponse.json(data)
 }
 
 // POST /api/cart → tambah produk ke keranjang
 export async function POST(request: Request) {
   const supabase = await createServerSupabase()
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) {
     return NextResponse.json({ error: 'Harus login dulu.' }, { status: 401 })
   }
@@ -35,48 +33,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'product_id wajib diisi' }, { status: 400 })
   }
 
-  // Ambil stok produk buat validasi
-  const { data: product } = await supabase.from('products').select('stock').eq('id', product_id).single()
-  if (!product) {
-    return NextResponse.json({ error: 'Produk tidak ditemukan.' }, { status: 404 })
+  const service = new CartService(supabase)
+
+  try {
+    const data = await service.addItem(user.id, product_id, quantity)
+    return NextResponse.json(data, { status: 201 })
+  } catch (e) {
+    const err = e as Error & { status?: number }
+    return NextResponse.json({ error: err.message }, { status: err.status ?? 500 })
   }
-
-  const { data: existing } = await supabase
-    .from('cart_items')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('product_id', product_id)
-    .maybeSingle()
-
-  const totalAfterAdd = (existing?.quantity ?? 0) + quantity
-  if (totalAfterAdd > product.stock) {
-    const sisa = product.stock - (existing?.quantity ?? 0)
-    return NextResponse.json(
-      { error: sisa > 0 ? `Stok tidak cukup. Kamu sudah punya ${existing?.quantity} di keranjang, sisa stok cuma ${sisa} lagi.` : 'Stok produk ini di keranjangmu sudah mencapai batas maksimal.' },
-      { status: 400 }
-    )
-  }
-
-  if (existing) {
-    const { data, error } = await supabase
-      .from('cart_items')
-      .update({ quantity: totalAfterAdd })
-      .eq('id', existing.id)
-      .select()
-      .single()
-
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json(data)
-  }
-
-  const { data, error } = await supabase
-    .from('cart_items')
-    .insert({ user_id: user.id, product_id, quantity })
-    .select()
-    .single()
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-  return NextResponse.json(data, { status: 201 })
 }
