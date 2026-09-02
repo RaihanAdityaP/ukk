@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api, getStoredUser, getToken } from '@/lib/api'
 import { getImageUrl } from '@/lib/utils'
-import { Plus, Pencil, Trash2, Shuffle, Image as ImageIcon } from 'lucide-react'
+import { Plus, Pencil, Trash2, Shuffle, Image as ImageIcon, Loader2 } from 'lucide-react'
 
 type SortKey = 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'stock-asc' | 'stock-desc' | 'newest' | 'random'
 
@@ -134,7 +134,25 @@ export default function AdminProductsPage() {
       </div>
 
       {loading ? (
-        <p className="text-ink/40 py-10 text-center">Memuat produk...</p>
+        <div className="space-y-3">
+          <div className="flex items-center justify-center gap-2 py-8 bg-white rounded-xl border border-stone/40 text-navy">
+            <Loader2 className="w-5 h-5 animate-spin text-accent" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-navy/70">
+              Memuat Data Produk...
+            </span>
+          </div>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center gap-3 bg-white rounded-xl p-3 border border-stone/30 animate-pulse">
+              <div className="w-12 h-12 rounded-lg bg-stone/30 shrink-0" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-1/3 bg-stone/40 rounded" />
+                <div className="h-3 w-1/4 bg-stone/20 rounded" />
+              </div>
+              <div className="w-8 h-8 rounded-lg bg-stone/20" />
+              <div className="w-8 h-8 rounded-lg bg-stone/20" />
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="space-y-2.5">
           {sortedProducts.map((p) => (

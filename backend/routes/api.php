@@ -23,6 +23,7 @@ Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{id}', [ProductController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/products/{productId}/reviews', [ReviewController::class, 'index']);
+Route::get('/orders/{code}', [OrderController::class, 'show']);
 
 // Midtrans Webhook (Public)
 Route::post('/payment/notification', [PaymentController::class, 'notification']);
@@ -35,6 +36,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/profile', [AuthController::class, 'updateProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
+    // Image / Avatar Upload (Authenticated Users)
+    Route::post('/upload', [\App\Http\Controllers\Api\UploadController::class, 'upload']);
+
     // Cart
     Route::get('/cart', [CartController::class, 'index']);
     Route::post('/cart', [CartController::class, 'store']);
@@ -44,7 +48,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Orders & Checkout
     Route::get('/orders', [OrderController::class, 'index']);
-    Route::get('/orders/{code}', [OrderController::class, 'show']);
     Route::post('/orders/checkout', [OrderController::class, 'checkout']);
 
     // Midtrans Payment Snap
@@ -52,6 +55,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Reviews
     Route::post('/products/{productId}/reviews', [ReviewController::class, 'store']);
+    Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
 
     // --- Admin Only Routes ---
     Route::middleware('admin')->group(function () {
@@ -62,8 +66,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::post('/categories', [CategoryController::class, 'store']);
         Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
-
-        Route::post('/upload', [\App\Http\Controllers\Api\UploadController::class, 'upload']);
 
         Route::get('/admin/logs', [\App\Http\Controllers\Api\ActivityLogController::class, 'index']);
 

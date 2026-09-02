@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
 
 export default function RegisterPage() {
@@ -124,9 +125,10 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading || !!success}
-            className="w-full bg-accent text-navy font-semibold py-3 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition"
+            className="w-full bg-accent text-navy font-semibold py-3 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition flex items-center justify-center gap-2"
           >
-            {loading ? 'Mendaftar...' : success ? 'Pendaftaran Berhasil...' : 'Daftar'}
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            <span>{loading ? 'Mendaftar...' : success ? 'Pendaftaran Berhasil...' : 'Daftar'}</span>
           </button>
 
           <Link href="/" className="block text-center text-ink/40 text-sm mt-5 hover:text-navy">

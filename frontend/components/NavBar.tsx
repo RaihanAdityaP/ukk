@@ -56,8 +56,20 @@ export default function NavBar() {
     await api.auth.logout()
     setUser(null)
     setIsAdmin(false)
-    router.push('/')
-    router.refresh()
+
+    // Jika halaman saat ini membutuhkan login (admin, profil, checkout, cart), arahkan ke home
+    const isProtectedRoute =
+      pathname.startsWith('/admin') ||
+      pathname === '/profile' ||
+      pathname === '/checkout' ||
+      pathname === '/cart'
+
+    if (isProtectedRoute) {
+      router.push('/')
+    } else {
+      // Jika di halaman publik (seperti /product/[id] atau katalog), tetap di halaman saat ini
+      router.refresh()
+    }
   }
 
   if (pathname === '/login' || pathname === '/register') {

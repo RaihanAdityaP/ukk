@@ -1,27 +1,24 @@
-import { createClient } from './supabase'
-import { ProductService } from './services/ProductService'
-import { CartService } from './services/CartService'
-import { OrderService } from './services/OrderService'
-import { ActivityLogService } from './services/ActivityLogService'
-
-export function getSupabase() {
-  return createClient()
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null
-  const userStr = localStorage.getItem('auth_user')
-  return userStr ? 'active_session' : null
+  return localStorage.getItem('auth_token')
 }
 
-export function setAuthSession(user: any) {
+export function setAuthSession(user: any, token?: string) {
   if (typeof window === 'undefined') return
-  localStorage.setItem('auth_user', JSON.stringify(user))
+  if (token) {
+    localStorage.setItem('auth_token', token)
+  }
+  if (user) {
+    localStorage.setItem('auth_user', JSON.stringify(user))
+  }
   window.dispatchEvent(new Event('auth-state-changed'))
 }
 
 export function clearAuthSession() {
   if (typeof window === 'undefined') return
+  localStorage.removeItem('auth_token')
   localStorage.removeItem('auth_user')
   window.dispatchEvent(new Event('auth-state-changed'))
 }
@@ -36,252 +33,216 @@ export function getStoredUser(): any | null {
   }
 }
 
-// --- API Service Methods (Directly Connected to Supabase Cloud via OOP Service Layer) ---
+async function request(endpoint: string, options: RequestInit = {}) {
+  const token = getToken()
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    ...(options.headers as Record<string, string>),
+  }
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json'
+  }
+
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  const url = `${API_URL}${cleanEndpoint}`
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  })
+
+  const contentType = response.headers.get('content-type')
+  let data: any = null
+  if (contentType && contentType.includes('application/json')) {
+    data = await response.json()
+  } else {
+    data = await response.text()
+  }
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      clearAuthSession()
+    }
+    const message =
+      data?.message ||
+      (typeof data === 'object' && data?.errors
+        ? Object.values(data.errors).flat().join(' ')
+        : typeof data === 'string'
+        ? data
+        : 'Terjadi kesalahan pada server.')
+    throw new Error(message)
+  }
+
+  return data
+}
+
+// --- API Service Methods (Directly Connected to Laravel REST API with OOP Backend) ---
 
 export const api = {
   // Auth
   auth: {
     async register(data: { name: string; email: string; password: string; phone?: string; address?: string }) {
-      const supabase = getSupabase()
-      const { data: authData, error } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            full_name: data.name,
-            phone: data.phone,
-            address: data.address,
-            role: 'customer',
-          },
-        },
+      const res = await request('/register', {
+        method: 'POST',
+        body: JSON.stringify(data),
       })
-
-      if (error) throw new Error(error.message)
-      if (!authData.user) throw new Error('Registrasi gagal.')
-
-      // Upsert profile
-      await supabase.from('profiles').upsert({
-        id: authData.user.id,
-        full_name: data.name,
-        role: 'customer',
-      })
-
-      const user = {
-        id: authData.user.id,
-        name: data.name,
-        email: data.email,
-        role: 'customer',
-        phone: data.phone,
-        address: data.address,
+      if (res.user && res.token) {
+        setAuthSession(res.user, res.token)
       }
-
-      setAuthSession(user)
-      return { user, message: 'Registrasi berhasil.' }
+      return { user: res.user, token: res.token, message: res.message || 'Registrasi berhasil.' }
     },
 
     async login(data: { email: string; password: string }) {
-      const supabase = getSupabase()
-      const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
+      const res = await request('/login', {
+        method: 'POST',
+        body: JSON.stringify(data),
       })
-
-      if (error) throw new Error(error.message)
-      if (!authData.user) throw new Error('Login gagal.')
-
-      // Fetch profile role
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authData.user.id)
-        .maybeSingle()
-
-      const role = profile?.role ?? (authData.user.email?.includes('admin') ? 'admin' : 'customer')
-      const name = profile?.full_name ?? authData.user.user_metadata?.full_name ?? authData.user.email?.split('@')[0]
-
-      const user = {
-        id: authData.user.id,
-        name: name,
-        email: authData.user.email,
-        role: role,
-        avatar_url: profile?.avatar_url,
+      if (res.user && res.token) {
+        setAuthSession(res.user, res.token)
       }
-
-      setAuthSession(user)
-      return { user, message: 'Login berhasil.' }
+      return { user: res.user, token: res.token, message: res.message || 'Login berhasil.' }
     },
 
     async me() {
       const stored = getStoredUser()
-      const supabase = getSupabase()
+      const token = getToken()
+      if (!token) return stored
 
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-          // If Supabase session is genuinely expired and no stored session
-          if (!stored) clearAuthSession()
-          return stored
+        const res = await request('/me')
+        if (res.user) {
+          setAuthSession(res.user)
+          return res.user
         }
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle()
-
-        const userData = {
-          id: user.id,
-          name: profile?.full_name ?? user.user_metadata?.full_name ?? user.email?.split('@')[0],
-          email: user.email,
-          phone: profile?.phone ?? user.user_metadata?.phone ?? '',
-          address: profile?.address ?? user.user_metadata?.address ?? '',
-          role: profile?.role ?? (user.email?.includes('admin') ? 'admin' : 'customer'),
-          avatar_url: profile?.avatar_url,
-        }
-
-        setAuthSession(userData)
-        return userData
+        return stored
       } catch {
         return stored
       }
     },
 
     async logout() {
-      const supabase = getSupabase()
       try {
-        await supabase.auth.signOut()
+        await request('/logout', { method: 'POST' })
       } catch {
-        // ignore
+        // ignore error on network drop
+      } finally {
+        clearAuthSession()
       }
-      clearAuthSession()
     },
 
     async updateProfile(data: { name?: string; phone?: string; address?: string; avatar_url?: string }) {
-      const supabase = getSupabase()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User belum login.')
-
-      const updates: any = {}
-      if (data.name) updates.full_name = data.name
-      if (data.avatar_url) updates.avatar_url = data.avatar_url
-
-      if (Object.keys(updates).length > 0) {
-        await supabase.from('profiles').update(updates).eq('id', user.id)
+      const res = await request('/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      })
+      if (res.user) {
+        setAuthSession(res.user)
       }
-
-      const updatedUser = await this.me()
-      return { user: updatedUser, message: 'Profil berhasil diperbarui.' }
+      return { user: res.user, message: res.message || 'Profil berhasil diperbarui.' }
     },
   },
 
-  // Products (OOP ProductService)
+  // Products
   products: {
     async list(params?: { search?: string; category?: string }) {
-      const supabase = getSupabase()
-      const service = new ProductService(supabase)
-      return service.list(params?.search, params?.category)
+      const queryParams = new URLSearchParams()
+      if (params?.search) queryParams.set('search', params.search)
+      if (params?.category && params.category !== 'All') queryParams.set('category', params.category)
+      const qs = queryParams.toString()
+      return request(qs ? `/products?${qs}` : '/products')
     },
 
     async getById(id: string | number) {
-      const supabase = getSupabase()
-      const service = new ProductService(supabase)
-      return service.getById(id)
-    },
-
-    async getAutomaticFeatured(products: any[]) {
-      const supabase = getSupabase()
-      const service = new ProductService(supabase)
-      return service.getAutomaticFeaturedProduct(products)
+      return request(`/products/${id}`)
     },
 
     async create(data: any) {
-      const supabase = getSupabase()
-      const service = new ProductService(supabase)
-      return service.create(data)
+      return request('/products', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
     },
 
     async update(id: string | number, data: any) {
-      const supabase = getSupabase()
-      const service = new ProductService(supabase)
-      return service.update(id, data)
+      return request(`/products/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      })
     },
 
     async delete(id: string | number) {
-      const supabase = getSupabase()
-      const service = new ProductService(supabase)
-      return service.delete(id)
+      return request(`/products/${id}`, {
+        method: 'DELETE',
+      })
     },
   },
 
   // Categories
   categories: {
     async list() {
-      const supabase = getSupabase()
-      const { data, error } = await supabase.from('categories').select('*').order('name')
-      if (error) throw new Error(error.message)
-      return data
+      return request('/categories')
+    },
+
+    async create(data: { name: string }) {
+      return request('/categories', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
+    },
+
+    async delete(id: string | number) {
+      return request(`/categories/${id}`, {
+        method: 'DELETE',
+      })
     },
   },
 
-  // Cart (OOP CartService)
+  // Cart
   cart: {
     async list() {
-      const supabase = getSupabase()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return []
-      const service = new CartService(supabase)
-      return service.listByUser(user.id)
+      return request('/cart')
     },
 
     async add(productId: string | number, quantity = 1) {
-      const supabase = getSupabase()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Silakan login terlebih dahulu untuk menambah keranjang.')
-      const service = new CartService(supabase)
-      return service.addItem(user.id, productId, quantity)
+      return request('/cart', {
+        method: 'POST',
+        body: JSON.stringify({ product_id: Number(productId), quantity }),
+      })
     },
 
-    async update(cartItemId: string | number, quantity: number) {
-      const supabase = getSupabase()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Silakan login terlebih dahulu.')
-      const service = new CartService(supabase)
-      return service.updateQuantity(user.id, cartItemId, quantity)
+    async update(id: string | number, quantity: number) {
+      return request(`/cart/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ quantity }),
+      })
     },
 
-    async remove(cartItemId: string | number) {
-      const supabase = getSupabase()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Silakan login terlebih dahulu.')
-      const service = new CartService(supabase)
-      return service.removeItem(user.id, cartItemId)
+    async remove(id: string | number) {
+      return request(`/cart/${id}`, {
+        method: 'DELETE',
+      })
     },
 
     async clear() {
-      const supabase = getSupabase()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      await supabase.from('cart_items').delete().eq('user_id', user.id)
+      return request('/cart', {
+        method: 'DELETE',
+      })
     },
   },
 
-  // Orders (OOP OrderService)
+  // Orders
   orders: {
     async list() {
-      const supabase = getSupabase()
-      const service = new OrderService(supabase)
-      return service.listAll()
+      return request('/orders')
     },
 
     async getByCode(code: string) {
-      const supabase = getSupabase()
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*, order_items(*)')
-        .eq('order_code', code)
-        .single()
-      if (error) throw new Error(error.message)
-      return data
+      return request(`/orders/${code}`)
     },
 
     async checkout(data: {
@@ -290,89 +251,73 @@ export const api = {
       customer_address: string
       payment_method: string
     }) {
-      const supabase = getSupabase()
-      const service = new OrderService(supabase)
-      return service.checkout(data)
+      return request('/orders/checkout', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      })
     },
 
-    async updateStatus(orderId: string, status: string) {
-      const supabase = getSupabase()
-      const { data, error } = await supabase
-        .from('orders')
-        .update({ status })
-        .eq('id', orderId)
-        .select()
-        .single()
-      if (error) throw new Error(error.message)
-      return data
+    async updateStatus(id: string | number, status: string) {
+      return request(`/orders/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      })
+    },
+  },
+
+  // Payment
+  payment: {
+    async createSnapToken(orderCode: string) {
+      return request('/payment/create-transaction', {
+        method: 'POST',
+        body: JSON.stringify({ order_code: orderCode }),
+      })
     },
   },
 
   // Reviews
   reviews: {
     async list(productId: string | number) {
-      const supabase = getSupabase()
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('*, profiles:customer_id(full_name, avatar_url)')
-        .eq('product_id', String(productId))
-        .order('created_at', { ascending: false })
-
-      if (error) return []
-      return data.map((r: any) => ({
-        ...r,
-        user: {
-          name: r.profiles?.full_name || 'Pembeli',
-        }
-      }))
+      return request(`/products/${productId}/reviews`)
     },
 
     async add(productId: string | number, data: { rating: number; comment?: string }) {
-      const supabase = getSupabase()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Silakan login untuk memberikan ulasan.')
-
-      const { data: review, error } = await supabase
-        .from('reviews')
-        .insert({
-          product_id: String(productId),
-          customer_id: user.id,
-          rating: data.rating,
-          comment: data.comment,
-        })
-        .select()
-        .single()
-
-      if (error) throw new Error(error.message)
-      return review
-    },
-  },
-
-  // Payment (Midtrans)
-  payment: {
-    async createSnapToken(order_code: string) {
-      const res = await fetch('/api/payment/create-transaction', {
+      return request(`/products/${productId}/reviews`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_code }),
+        body: JSON.stringify(data),
       })
-      if (!res.ok) throw new Error('Gagal membuat transaksi Midtrans.')
-      return res.json()
+    },
+
+    async delete(id: string | number) {
+      return request(`/reviews/${id}`, {
+        method: 'DELETE',
+      })
     },
   },
 
-  // Logs (ActivityLogService)
+  // Activity Logs
   logs: {
     async list(limit = 50) {
-      const supabase = getSupabase()
-      const service = new ActivityLogService(supabase)
-      return service.list(limit)
+      return request(`/admin/logs?limit=${limit}`)
     },
 
-    async record(action: string, description: string, userId?: string) {
-      const supabase = getSupabase()
-      const service = new ActivityLogService(supabase)
-      return service.record(action, description, userId)
+    async record(action: string, description: string) {
+      // Backend automatically logs actions inside its OOP service layer
+      return { success: true }
+    },
+  },
+
+  // File Upload (Images & Avatars)
+  upload: {
+    async file(file: File, folder: 'products' | 'avatars' = 'products') {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', folder)
+
+      return request('/upload', {
+        method: 'POST',
+        body: formData,
+      })
     },
   },
 }

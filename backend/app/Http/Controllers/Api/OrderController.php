@@ -38,8 +38,8 @@ class OrderController extends Controller
      */
     public function show(Request $request, string $code): JsonResponse
     {
-        $user = $request->user();
-        $userId = $user->isAdmin() ? null : $user->id;
+        $user = auth('sanctum')->user() ?? $request->user();
+        $userId = ($user && !$user->isAdmin()) ? $user->id : null;
 
         $order = $this->orderService->getByCode($code, $userId);
         return response()->json($order);

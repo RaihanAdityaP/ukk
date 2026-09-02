@@ -2,23 +2,39 @@ import Link from 'next/link'
 import AddToCartButton from '@/components/AddToCartButton'
 import StarRating from '@/components/StarRating'
 import ReviewForm from '@/components/ReviewForm'
+import ReviewDeleteButton from '@/components/ReviewDeleteButton'
 import { getImageUrl } from '@/lib/utils'
 import { ArrowLeft, Image as ImageIcon } from 'lucide-react'
-import { createServerSupabase } from '@/lib/supabase-server'
-import { ProductService } from '@/lib/services/ProductService'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+
+async function getProduct(id: string) {
+  try {
+    const res = await fetch(`${API_URL}/products/${id}`, { cache: 'no-store' })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+async function getReviews(id: string) {
+  try {
+    const res = await fetch(`${API_URL}/products/${id}/reviews`, { cache: 'no-store' })
+    if (!res.ok) return []
+    return await res.json()
+  } catch {
+    return []
+  }
+}
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createServerSupabase()
-  const productService = new ProductService(supabase)
 
-  let product: any = null
-  try {
-    product = await productService.getById(id)
-  } catch {
-    product = null
-  }
-
+  const [product, reviews] = await Promise.all([
+    getProduct(id),
+    getReviews(id),
+  ])
   if (!product) {
     return (
       <main className="max-w-4xl mx-auto px-4 py-16 text-center">
@@ -28,16 +44,9 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     )
   }
 
-  // Fetch reviews directly from Supabase
-  const { data: reviewsData } = await supabase
-    .from('reviews')
-    .select('*, profiles:customer_id(full_name)')
-    .eq('product_id', id)
-    .order('created_at', { ascending: false })
-
-  const reviews = reviewsData ?? []
   const totalRating = reviews.reduce((sum: number, r: any) => sum + r.rating, 0)
-  const avgRating = reviews.length > 0 ? totalRating / reviews.length : 0
+  const avgRating = reviews.length > 0 ? totalRating / reviews.length : (product.average_rating ?? 0)
+  const categoryName = product.category?.name || product.categories?.name
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
@@ -57,7 +66,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         </div>
 
         <div className="bg-white rounded-xl p-5">
-          <p className="text-xs font-medium text-ink/40 mb-2">{product.categories?.name}</p>
+          {categoryName && <p className="text-xs font-medium text-ink/40 mb-2">{categoryName}</p>}
           <h1 className="font-serif text-2xl font-bold text-navy mb-3">{product.name}</h1>
 
           <div className="flex items-center gap-2 mb-4">
@@ -65,6 +74,11 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             <span className="text-sm text-ink/50">
               {avgRating > 0 ? `${avgRating.toFixed(1)} (${reviews.length} ulasan)` : 'Belum ada ulasan'}
             </span>
+            {product.total_sold > 0 && (
+              <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60 ml-1">
+                {product.total_sold} Terjual
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-3 mb-6">
@@ -90,13 +104,16 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         ) : (
           <div className="space-y-2.5">
             {reviews.map((r: any) => (
-              <div key={r.id} className="bg-white rounded-xl p-4">
+              <div key={r.id} className="bg-white rounded-xl p-4 border border-stone/30 shadow-sm">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="font-semibold text-sm">{r.profiles?.full_name || 'Pembeli'}</span>
-                  <span className="text-xs text-ink/40">{new Date(r.created_at).toLocaleDateString('id-ID')}</span>
+                  <span className="font-semibold text-sm text-navy">{r.user?.name || r.profiles?.full_name || 'Pembeli'}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-ink/40">{new Date(r.created_at).toLocaleDateString('id-ID')}</span>
+                    <ReviewDeleteButton reviewId={r.id} authorId={r.user_id ?? r.customer_id ?? r.user?.id} />
+                  </div>
                 </div>
                 <StarRating value={r.rating} size="sm" />
-                {r.comment && <p className="text-sm text-ink/70 mt-2">{r.comment}</p>}
+                {r.comment && <p className="text-sm text-ink/70 mt-2 leading-relaxed">{r.comment}</p>}
               </div>
             ))}
           </div>

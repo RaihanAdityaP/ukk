@@ -135,4 +135,39 @@ class SupabaseSyncService extends BaseService
             Log::warning("Supabase order sync failed: " . $e->getMessage());
         }
     }
+
+    /**
+     * Upload file ke Supabase Storage via REST API
+     */
+    public static function uploadStorageFile(\Illuminate\Http\UploadedFile $file, string $folder = 'products'): string
+    {
+        $url = rtrim(config('supabase.url'), '/');
+        $key = config('supabase.anon_key');
+
+        $bucket = ($folder === 'avatars') ? 'avatars' : 'product-images';
+        $extension = $file->getClientOriginalExtension() ?: 'png';
+        $fileName = time() . '-' . uniqid() . '.' . $extension;
+
+        try {
+            $response = Http::withHeaders([
+                'apikey' => $key,
+                'Authorization' => 'Bearer ' . $key,
+                'Content-Type' => $file->getMimeType() ?: 'image/jpeg',
+                'x-upsert' => 'true',
+            ])->withBody(file_get_contents($file->getRealPath()), $file->getMimeType() ?: 'image/jpeg')
+              ->post("{$url}/storage/v1/object/{$bucket}/{$fileName}");
+
+            if ($response->successful()) {
+                return "{$url}/storage/v1/object/public/{$bucket}/{$fileName}";
+            }
+
+            Log::warning("Supabase Storage upload failed ({$response->status()}): " . $response->body());
+        } catch (\Throwable $e) {
+            Log::warning("Supabase Storage upload exception: " . $e->getMessage());
+        }
+
+        // Fallback jika bucket tidak ditemukan / ada isu koneksi
+        $path = $file->store($folder, 'public');
+        return '/storage/' . $path;
+    }
 }

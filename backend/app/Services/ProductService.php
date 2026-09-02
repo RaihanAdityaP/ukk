@@ -22,6 +22,17 @@ class ProductService extends BaseService
     {
         $query = Product::with(['category', 'reviews.user'])
             ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
+            ->withSum(['orderItems as total_sold' => function ($q) {
+                $q->whereHas('order', function ($oq) {
+                    $oq->whereIn('status', ['paid', 'shipped', 'done']);
+                });
+            }], 'quantity')
+            ->withCount(['orderItems as total_orders' => function ($q) {
+                $q->whereHas('order', function ($oq) {
+                    $oq->whereIn('status', ['paid', 'shipped', 'done']);
+                });
+            }])
             ->latest();
 
         if ($search) {
@@ -42,6 +53,17 @@ class ProductService extends BaseService
     {
         return Product::with(['category', 'reviews.user'])
             ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
+            ->withSum(['orderItems as total_sold' => function ($q) {
+                $q->whereHas('order', function ($oq) {
+                    $oq->whereIn('status', ['paid', 'shipped', 'done']);
+                });
+            }], 'quantity')
+            ->withCount(['orderItems as total_orders' => function ($q) {
+                $q->whereHas('order', function ($oq) {
+                    $oq->whereIn('status', ['paid', 'shipped', 'done']);
+                });
+            }])
             ->findOrFail($id);
     }
 
@@ -52,8 +74,7 @@ class ProductService extends BaseService
     {
         return $this->transaction(function () use ($data, $image) {
             if ($image) {
-                $path = $image->store('products', 'public');
-                $data['image_url'] = '/storage/' . $path;
+                $data['image_url'] = SupabaseSyncService::uploadStorageFile($image, 'products');
             }
 
             // Jika is_featured diset true, reset produk featured sebelumnya
@@ -86,14 +107,7 @@ class ProductService extends BaseService
 
         return $this->transaction(function () use ($product, $data, $image) {
             if ($image) {
-                // Hapus gambar lama jika ada di local public storage
-                if ($product->image_url && str_starts_with($product->image_url, '/storage/')) {
-                    $oldPath = str_replace('/storage/', '', $product->image_url);
-                    Storage::disk('public')->delete($oldPath);
-                }
-
-                $path = $image->store('products', 'public');
-                $data['image_url'] = '/storage/' . $path;
+                $data['image_url'] = SupabaseSyncService::uploadStorageFile($image, 'products');
             }
 
             if (!empty($data['is_featured'])) {

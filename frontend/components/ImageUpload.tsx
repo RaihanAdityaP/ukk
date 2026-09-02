@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase'
+import { api } from '@/lib/api'
 import { getImageUrl } from '@/lib/utils'
-import { Upload, X, Camera } from 'lucide-react'
+import { Upload, X, Camera, Loader2 } from 'lucide-react'
 
 export default function ImageUpload({
   value,
@@ -23,28 +23,8 @@ export default function ImageUpload({
     setUploading(true)
 
     try {
-      const supabase = createClient()
-      const ext = file.name.split('.').pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`
-
-      const { data, error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(fileName, file, { upsert: true })
-
-      if (uploadError) {
-        // Fallback jika bucket tidak ditemukan atau policy restricted
-        // Konversi ke base64 / data URL
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          onChange(reader.result as string)
-          setUploading(false)
-        }
-        reader.readAsDataURL(file)
-        return
-      }
-
-      const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName)
-      onChange(publicUrl)
+      const res = await api.upload.file(file, 'products')
+      onChange(res.url)
     } catch (err: any) {
       setError(err.message || 'Gagal upload gambar.')
     } finally {
@@ -61,29 +41,55 @@ export default function ImageUpload({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={getImageUrl(value)} alt="Preview" className="w-full h-full object-cover" />
 
-          <label className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex flex-col items-center justify-center gap-1.5 cursor-pointer">
-            <Camera className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition" />
-            <span className="opacity-0 group-hover:opacity-100 text-white text-sm font-medium transition">
-              {uploading ? 'Mengupload...' : 'Klik untuk ganti foto'}
-            </span>
+          <label
+            className={`absolute inset-0 bg-black/50 transition flex flex-col items-center justify-center gap-2 cursor-pointer ${
+              uploading ? 'opacity-100 pointer-events-none' : 'opacity-0 group-hover:opacity-100'
+            }`}
+          >
+            {uploading ? (
+              <div className="flex flex-col items-center gap-1 text-white">
+                <Loader2 className="w-7 h-7 animate-spin" />
+                <span className="text-xs font-medium">Mengupload foto produk...</span>
+              </div>
+            ) : (
+              <>
+                <Camera className="w-5 h-5 text-white" />
+                <span className="text-white text-sm font-medium">Klik untuk ganti foto</span>
+              </>
+            )}
             <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" disabled={uploading} />
           </label>
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              onChange('')
-            }}
-            className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white text-brick flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {!uploading && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onChange('')
+              }}
+              className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white text-brick flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       ) : (
-        <label className="flex flex-col items-center justify-center w-full h-44 mb-1 rounded-xl border-2 border-dashed border-stone cursor-pointer hover:border-navy transition text-ink/40 text-sm gap-1.5">
-          <Upload className="w-5 h-5" />
-          {uploading ? 'Mengupload...' : 'Klik untuk pilih gambar'}
+        <label
+          className={`flex flex-col items-center justify-center w-full h-44 mb-1 rounded-xl border-2 border-dashed border-stone transition text-ink/40 text-sm gap-2 ${
+            uploading ? 'bg-stone/10 cursor-not-allowed' : 'cursor-pointer hover:border-navy hover:bg-stone/10'
+          }`}
+        >
+          {uploading ? (
+            <div className="flex flex-col items-center gap-2 text-navy">
+              <Loader2 className="w-7 h-7 animate-spin text-navy" />
+              <span className="text-xs font-medium animate-pulse">Sedang mengupload gambar...</span>
+            </div>
+          ) : (
+            <>
+              <Upload className="w-5 h-5" />
+              <span>Klik untuk pilih gambar</span>
+            </>
+          )}
           <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" disabled={uploading} />
         </label>
       )}

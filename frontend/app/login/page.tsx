@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
 
 function LoginForm() {
@@ -100,9 +101,10 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading || !!success}
-            className="w-full bg-accent text-navy font-semibold py-3 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition"
+            className="w-full bg-accent text-navy font-semibold py-3 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition flex items-center justify-center gap-2"
           >
-            {loading ? 'Memproses...' : success ? 'Berhasil Masuk...' : 'Login'}
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            <span>{loading ? 'Memproses...' : success ? 'Berhasil Masuk...' : 'Login'}</span>
           </button>
 
           <div className="mt-4 p-3 bg-stone/20 rounded-lg text-xs text-ink/70">

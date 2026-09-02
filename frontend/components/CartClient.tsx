@@ -11,6 +11,7 @@ export default function CartClient() {
   const router = useRouter()
   const [items, setItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [updatingId, setUpdatingId] = useState<number | string | null>(null)
   const [warningId, setWarningId] = useState<number | string | null>(null)
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export default function CartClient() {
       return
     }
 
+    setUpdatingId(id)
     // Optimistic UI update
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item)))
 
@@ -48,23 +50,30 @@ export default function CartClient() {
       await api.cart.update(id, newQuantity)
     } catch (err) {
       loadCart()
+    } finally {
+      setUpdatingId(null)
     }
   }
 
   async function removeItem(id: number | string) {
+    setUpdatingId(id)
     setItems((prev) => prev.filter((item) => item.id !== id))
     try {
       await api.cart.remove(id)
     } catch (err) {
       loadCart()
+    } finally {
+      setUpdatingId(null)
     }
   }
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl py-20 flex flex-col items-center justify-center text-ink/40">
-        <Loader2 className="w-8 h-8 animate-spin text-navy mb-2" />
-        <p className="text-sm">Memuat keranjang belanja...</p>
+      <div className="space-y-4">
+        <div className="bg-white rounded-xl py-16 flex flex-col items-center justify-center text-ink/40 border border-stone/40">
+          <Loader2 className="w-9 h-9 animate-spin text-navy mb-3" />
+          <p className="text-sm font-medium text-navy/70">Memuat keranjang belanja...</p>
+        </div>
       </div>
     )
   }

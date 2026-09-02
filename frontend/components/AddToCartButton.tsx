@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Minus, X, Image as ImageIcon } from 'lucide-react'
+import { Plus, Minus, X, Image as ImageIcon, Loader2 } from 'lucide-react'
 import { api, getToken } from '@/lib/api'
 import { getImageUrl } from '@/lib/utils'
 
@@ -36,7 +36,8 @@ export default function AddToCartButton({
 
   function openModal() {
     if (!getToken()) {
-      router.push('/login?redirect=/')
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/'
+      router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
       return
     }
     setQuantity(1)
@@ -76,7 +77,8 @@ export default function AddToCartButton({
       setLoading(false)
       if (err.status === 401) {
         setModalOpen(false)
-        router.push('/login?redirect=/')
+        const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/'
+        router.push(`/login?redirect=${encodeURIComponent(currentPath)}`)
         return
       }
       setModalOpen(false)
@@ -194,9 +196,10 @@ export default function AddToCartButton({
             <button
               onClick={handleConfirm}
               disabled={loading}
-              className="w-full bg-accent text-navy font-semibold text-sm py-3 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition"
+              className="w-full bg-accent text-navy font-semibold text-sm py-3 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition flex items-center justify-center gap-2"
             >
-              {loading ? 'Menambahkan...' : 'Konfirmasi'}
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              <span>{loading ? 'Menambahkan...' : 'Konfirmasi'}</span>
             </button>
           </div>
         </div>

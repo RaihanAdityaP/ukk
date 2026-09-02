@@ -39,4 +39,28 @@ class ReviewService extends BaseService
 
         return $review;
     }
+
+    public function delete(int $userId, int $reviewId, bool $isAdmin = false): void
+    {
+        $query = Review::where('id', $reviewId);
+        if (!$isAdmin) {
+            $query->where('user_id', $userId);
+        }
+        $review = $query->firstOrFail();
+
+        $authorId = $review->user_id;
+        $productId = $review->product_id;
+        $commentSnippet = mb_substr($review->comment ?? "Rating {$review->rating}★", 0, 40);
+
+        $review->delete();
+
+        ActivityLogService::record(
+            $userId,
+            'DELETE_REVIEW',
+            $isAdmin && $userId !== $authorId
+                ? "Admin menghapus ulasan pengguna pada produk ID #{$productId} ('{$commentSnippet}')"
+                : "Pengguna menghapus ulasannya sendiri pada produk ID #{$productId}",
+            ['review_id' => $reviewId, 'product_id' => $productId, 'author_id' => $authorId]
+        );
+    }
 }

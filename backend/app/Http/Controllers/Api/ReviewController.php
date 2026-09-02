@@ -44,4 +44,14 @@ class ReviewController extends Controller
 
         return response()->json($review, 201);
     }
+
+    /**
+     * DELETE /api/reviews/{id}
+     */
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+        $this->reviewService->delete($user->id, $id, $user->isAdmin());
+        return response()->json(['message' => 'Ulasan berhasil dihapus.']);
+    }
 }

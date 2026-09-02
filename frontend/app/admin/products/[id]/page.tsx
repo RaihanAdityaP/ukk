@@ -4,7 +4,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { api, getToken, getStoredUser } from '@/lib/api'
 import ImageUpload from '@/components/ImageUpload'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function EditProductPage() {
@@ -27,7 +27,7 @@ export default function EditProductPage() {
 
   useEffect(() => {
     if (!getToken()) {
-      router.push('/login?redirect=/admin/products')
+      router.push(`/login?redirect=/admin/products/${id}`)
       return
     }
     const user = getStoredUser()
@@ -36,26 +36,26 @@ export default function EditProductPage() {
       return
     }
 
-    Promise.all([
-      api.products.getById(id),
-      api.categories.list(),
-    ]).then(([data, cats]) => {
-      setCategories(cats)
-      if (data) {
-        setForm({
-          name: data.name ?? '',
-          category_id: data.category_id ? String(data.category_id) : '',
-          price: String(data.price ?? ''),
-          stock: String(data.stock ?? ''),
-          image_url: data.image_url ?? '',
-          description: data.description ?? '',
-        })
-      }
-    }).catch((err) => {
-      console.error('Failed to load product for editing', err)
-    }).finally(() => {
-      setLoading(false)
-    })
+    Promise.all([api.products.getById(id), api.categories.list()])
+      .then(([prod, cats]) => {
+        setCategories(cats)
+        if (prod) {
+          setForm({
+            name: prod.name || '',
+            category_id: prod.category_id || '',
+            price: prod.price != null ? String(prod.price) : '',
+            stock: prod.stock != null ? String(prod.stock) : '',
+            image_url: prod.image_url || '',
+            description: prod.description || '',
+          })
+        }
+      })
+      .catch((err) => {
+        setError(err.message || 'Gagal memuat produk.')
+      })
+      .finally(() => {
+        setLoading(false)
+      })
   }, [id, router])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -83,7 +83,12 @@ export default function EditProductPage() {
   }
 
   if (loading) {
-    return <main className="max-w-lg mx-auto px-4 py-16 text-center text-ink/40">Memuat produk...</main>
+    return (
+      <main className="max-w-lg mx-auto px-4 py-16 text-center text-ink/40">
+        <Loader2 className="w-9 h-9 animate-spin text-navy mx-auto mb-3" />
+        <p className="text-sm font-medium text-navy/70">Memuat data produk...</p>
+      </main>
+    )
   }
 
   return (
@@ -166,9 +171,10 @@ export default function EditProductPage() {
           <button
             type="submit"
             disabled={saving}
-            className="bg-accent text-navy font-semibold px-6 py-2.5 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition"
+            className="bg-accent text-navy font-semibold px-6 py-2.5 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition flex items-center justify-center gap-2"
           >
-            {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+            <span>{saving ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
           </button>
           <button
             type="button"

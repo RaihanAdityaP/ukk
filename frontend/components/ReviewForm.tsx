@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 import { api, getToken } from '@/lib/api'
 import StarRating from './StarRating'
 
@@ -61,9 +62,10 @@ export default function ReviewForm({ productId, onReviewAdded }: { productId: st
       <button
         type="submit"
         disabled={submitting}
-        className="bg-navy text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-brick disabled:opacity-50 transition"
+        className="bg-navy text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-brick disabled:opacity-50 transition flex items-center justify-center gap-2"
       >
-        {submitting ? 'Mengirim...' : 'Kirim Ulasan'}
+        {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+        <span>{submitting ? 'Mengirim Ulasan...' : 'Kirim Ulasan'}</span>
       </button>
     </form>
   )

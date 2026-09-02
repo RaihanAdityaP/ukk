@@ -1,25 +1,27 @@
 import Link from 'next/link'
-import { createServerSupabase } from '@/lib/supabase-server'
 import { Check, Clock, X } from 'lucide-react'
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+
 // Halaman ini yang dilihat customer setelah selesai bayar di Midtrans
-// (terutama buat metode yang redirect keluar app, misal QRIS/GoPay di HP).
-// Midtrans nempelin ?order_id=... di URL pas redirect balik ke sini.
-//
-// PENTING: status yang ditampilin di sini diambil ULANG dari database kita
-// (bukan cuma percaya query URL begitu aja), soalnya query URL bisa diubah-ubah
-// orang. Status asli yang valid itu yang udah diupdate lewat webhook notification.
 export default async function PaymentFinishPage({
   searchParams,
 }: {
   searchParams: Promise<{ order_id?: string }>
 }) {
   const { order_id } = await searchParams
-  const supabase = await createServerSupabase()
 
-  const { data: order } = order_id
-    ? await supabase.from('orders').select('order_code, status, total').eq('order_code', order_id).single()
-    : { data: null }
+  let order: any = null
+  if (order_id) {
+    try {
+      const res = await fetch(`${API_URL}/orders/${order_id}`, { cache: 'no-store' })
+      if (res.ok) {
+        order = await res.json()
+      }
+    } catch {
+      order = null
+    }
+  }
 
   if (!order) {
     return (

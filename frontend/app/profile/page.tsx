@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api, getToken } from '@/lib/api'
 import AvatarUpload from '@/components/AvatarUpload'
-import { LogOut } from 'lucide-react'
+import { LogOut, Loader2 } from 'lucide-react'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -21,35 +21,36 @@ export default function ProfilePage() {
   const [profileMsg, setProfileMsg] = useState('')
 
   useEffect(() => {
-    async function loadProfile() {
-      if (!getToken()) {
-        router.push('/login?redirect=/profile')
-        return
-      }
+    if (!getToken()) {
+      router.push('/login?redirect=/profile')
+      return
+    }
 
+    async function loadProfile() {
       try {
         const user = await api.auth.me()
         if (user) {
-          setEmail(user.email ?? '')
-          setFullName(user.name ?? '')
-          setPhone(user.phone ?? '')
-          setAddress(user.address ?? '')
-          setAvatarUrl(user.avatar_url ?? '')
-          setRole(user.role ?? 'customer')
+          setEmail(user.email || '')
+          setRole(user.role || 'customer')
+          setFullName(user.name || '')
+          setPhone(user.phone || '')
+          setAddress(user.address || '')
+          setAvatarUrl(user.avatar_url || '')
         }
       } catch (err) {
-        router.push('/login?redirect=/profile')
+        console.error('Failed to load profile', err)
       } finally {
         setLoading(false)
       }
     }
+
     loadProfile()
   }, [router])
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault()
-    setProfileMsg('')
     setSavingProfile(true)
+    setProfileMsg('')
 
     try {
       await api.auth.updateProfile({
@@ -74,14 +75,19 @@ export default function ProfilePage() {
   }
 
   if (loading) {
-    return <main className="max-w-lg mx-auto px-4 py-16 text-center text-ink/40">Memuat profil...</main>
+    return (
+      <main className="max-w-lg mx-auto px-4 py-16 text-center text-ink/40">
+        <Loader2 className="w-9 h-9 animate-spin text-navy mx-auto mb-3" />
+        <p className="text-sm font-medium text-navy/70">Memuat data profil...</p>
+      </main>
+    )
   }
 
   return (
     <main className="max-w-lg mx-auto px-4 py-8">
       <h1 className="font-serif text-3xl font-bold text-navy mb-6">Profil Saya</h1>
 
-      <form onSubmit={handleSaveProfile} className="bg-white rounded-xl p-5 space-y-4 mb-6">
+      <form onSubmit={handleSaveProfile} className="bg-white rounded-xl p-5 space-y-4 mb-6 shadow-sm border border-stone/30">
         <div className="flex justify-center mb-1">
           <AvatarUpload value={avatarUrl} fallbackLetter={fullName.charAt(0) || email.charAt(0)} onChange={setAvatarUrl} />
         </div>
@@ -134,9 +140,10 @@ export default function ProfilePage() {
         <button
           type="submit"
           disabled={savingProfile}
-          className="bg-accent text-navy font-semibold px-6 py-2.5 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition"
+          className="bg-accent text-navy font-semibold px-6 py-2.5 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition flex items-center justify-center gap-2"
         >
-          {savingProfile ? 'Menyimpan...' : 'Simpan Profil'}
+          {savingProfile && <Loader2 className="w-4 h-4 animate-spin" />}
+          <span>{savingProfile ? 'Menyimpan Profil...' : 'Simpan Profil'}</span>
         </button>
       </form>
 

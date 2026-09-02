@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Script from 'next/script'
 import { api, getStoredUser, getToken } from '@/lib/api'
-import { Check, Truck, CreditCard } from 'lucide-react'
+import { Check, Truck, CreditCard, Loader2 } from 'lucide-react'
 
 declare global {
   interface Window {
@@ -188,9 +188,10 @@ export default function CheckoutPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-accent text-navy font-semibold py-3 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition"
+          className="w-full bg-accent text-navy font-semibold py-3 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition flex items-center justify-center gap-2"
         >
-          {loading ? 'Memproses...' : 'Buat Pesanan'}
+          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+          <span>{loading ? 'Memproses Pesanan...' : 'Buat Pesanan'}</span>
         </button>
       </form>
     </main>

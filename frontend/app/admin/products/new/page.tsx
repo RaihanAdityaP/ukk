@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { api, getToken, getStoredUser } from '@/lib/api'
 import ImageUpload from '@/components/ImageUpload'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function NewProductPage() {
@@ -154,9 +154,10 @@ export default function NewProductPage() {
         <button
           type="submit"
           disabled={saving || !!success}
-          className="w-full bg-accent text-navy font-semibold py-3 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition"
+          className="w-full bg-accent text-navy font-semibold py-3 rounded-lg hover:bg-brick hover:text-white disabled:opacity-50 transition flex items-center justify-center gap-2"
         >
-          {saving ? 'Menyimpan...' : success ? 'Berhasil Ditambahkan...' : 'Simpan Produk'}
+          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+          <span>{saving ? 'Menyimpan Produk...' : success ? 'Berhasil Ditambahkan...' : 'Simpan Produk'}</span>
         </button>
       </form>
     </main>
